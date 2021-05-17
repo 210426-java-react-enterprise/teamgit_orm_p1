@@ -29,9 +29,11 @@ public class Driver {
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
 
-        AppUser appUser = new AppUser("username", "password", "email@gmail.com", "User", "Name", "1998-12-20");
+        AppUser appUser = new AppUser("un", "pw", "email@gmail.com", "User", "Name", "1998-12-20");
         Driver driver = new Driver();
-
+        System.out.println("+-----------------+");
+        repos.UserRepo.save(appUser);
+        System.out.println("+-----------------+");
         Class<?> appClass = appUser.getClass();
         String className = appClass.getSimpleName();
         System.out.println("This is the name of the class: " + className);
@@ -53,14 +55,16 @@ public class Driver {
         }
 
         //the names of the actual field
-        for(Field field : fields){
+        /*for(Field field : fields){
             System.out.println(field.getName());
         }
 
 
         for(Field field : fields){
             System.out.println(field.getType());
-        }
+        }*/
+
+
 
 
 

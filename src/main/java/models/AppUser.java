@@ -3,6 +3,7 @@ package models;
 import annotations.Column;
 import annotations.Entity;
 import annotations.Id;
+import annotations.Table;
 
 import javax.print.attribute.standard.DateTimeAtCreation;
 import java.time.LocalDate;
@@ -13,29 +14,30 @@ import java.time.LocalDate;
  * Builds the AppUser object using basic getters and setters
  */
 
-@Entity(name = "appuser")
+@Entity()
+@Table(name = "users")
 public class AppUser {
 
     @Id //Specifies Primary Key of entity
-    @Column(name = "id")
+    @Column(name = "id", nullable = false, unique = true)
     private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
 
-    @Column(name = "username")
+    @Column(name = "username", nullable = false, unique = true)
     private String username;
 
-    @Column(name = "password")
+    @Column(name = "password", nullable = false, unique = false)
     private String password;
 
-    @Column(name = "email")
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "firstName")
+    @Column(name = "firstName", nullable = false, unique = false)
     private String firstName;
 
-    @Column(name = "lastName")
+    @Column(name = "lastName", nullable = false, unique = false)
     private String lastName;
 
-    @Column(name = "dob")
+    @Column(name = "dob", nullable = false, unique = false)
     private String dob;//TODO: update format?
 
 
