@@ -46,10 +46,12 @@ public class UserRepo {
                 //check for columns the class has
                 List<ColumnNode> columnNodes = new ArrayList<>();
 
-                StringBuilder preparedStatement = new StringBuilder().append("CREATE TABLE ").append(tableName);
+                //beware duplicate table names
+                //TODO: alter .append when done testing
+                StringBuilder preparedStatement = new StringBuilder().append("CREATE TABLE ").append("test_" + tableName);
                 preparedStatement.append("(");
 
-                //TODO: get length for varchar
+
                 for (Field f: clazz.getDeclaredFields()) {
                     if(f.isAnnotationPresent(Column.class)){
                         Column column = f.getAnnotation(Column.class);
@@ -60,42 +62,45 @@ public class UserRepo {
                         if(f.getAnnotation(Column.class).type().equals("varchar")){
                             preparedStatement.append(" VARCHAR(");
                             preparedStatement.append(f.getAnnotation(Column.class).length());
-                            System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
+                            preparedStatement.append(")");
+                            //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
                         }else if(f.getAnnotation(Column.class).type().equals("date")){
                             preparedStatement.append(" DATE");
-                            System.out.print(" DATE");//checking
+                            //System.out.print(" DATE");//checking
                         }else if(f.getAnnotation(Column.class).type().equals("serial")){
                             preparedStatement.append(" SERIAL");
-                            System.out.print(" SERIAL");//checking
+                            //System.out.print(" SERIAL");//checking
                         }else{//if no type is found...
-                            System.out.println(" INVALID");
-                            //throw new IllegalStateException("Invalid data type!");
+                            //System.out.println(" INVALID");
+                            throw new IllegalStateException("Invalid data type!");
                         }
 
                         if(!f.getAnnotation(Column.class).nullable()){
                             preparedStatement.append(" not null");
-                            System.out.print(" not null");//checking
+                            //System.out.print(" not null");//checking
                         }
 
                         if(f.getAnnotation(Column.class).unique()){
                             preparedStatement.append(" unique");
-                            System.out.print(" unique");//checking
+                            //System.out.print(" unique");//checking
                         }
                         preparedStatement.append(", ");
-                        System.out.println(",");//checking
+                        //System.out.println(",");//checking
                     }
                 }//end for loop
                 preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                preparedStatement.append(");");
+                preparedStatement.append(")");
 
                 String sql = preparedStatement.toString();
 
-                /*try {
+                System.out.println(sql);//Just to verify
+
+                try {
                     PreparedStatement pstmt = conn.prepareStatement(sql);
                     pstmt.executeUpdate();
                 } catch (SQLException e) {
                     e.printStackTrace();
-                }*/
+                }
 
             }//end if for checking if class has @Table
         }//end if for checking if class has @Entity
