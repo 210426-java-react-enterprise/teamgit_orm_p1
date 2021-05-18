@@ -9,9 +9,10 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.sql.*;
 
 public class Driver {
 
@@ -29,11 +30,26 @@ public class Driver {
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
 
-        AppUser appUser = new AppUser("un", "pw", "email@gmail.com", "User", "Name", "1998-12-20");
-        Driver driver = new Driver();
-        System.out.println("+-----------------+");
-        repos.UserRepo.save(appUser);
-        System.out.println("+-----------------+");
+        AppUser appUser = new AppUser("usernametest1", "pw", "emailtest1@gmail.com", "User", "Name", "1998-12-20");
+        Map<String, String> applicationProperties = new HashMap<>();
+        applicationProperties.put("host-url", "jdbc:postgresql://project0.cmu8byclpwye.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=public");
+        applicationProperties.put("username", "postgres");
+        applicationProperties.put("password", "Octopu5!");
+
+        try(Connection conn = util.ConnectionFactory.getInstance().getConnection(applicationProperties)){
+            Driver driver = new Driver();
+            System.out.println("+-----------------+");
+
+            repos.UserRepo.save(appUser, conn);
+            System.out.println("+-----------------+");
+        }catch (SQLException throwables) {
+            throwables.printStackTrace();
+        };
+
+
+
+        /*
+
         Class<?> appClass = appUser.getClass();
         String className = appClass.getSimpleName();
         System.out.println("This is the name of the class: " + className);
@@ -62,7 +78,9 @@ public class Driver {
 
         for(Field field : fields){
             System.out.println(field.getType());
-        }*/
+
+
+       */
 
 
 
@@ -83,7 +101,9 @@ public class Driver {
 
 
 
-    }
+
+
+    }//end main
 
     public List<Class<?>> getClassesInPackageWithConstraints(String packageName, Predicate<Class<?>> predicate) throws MalformedURLException, ClassNotFoundException {
 

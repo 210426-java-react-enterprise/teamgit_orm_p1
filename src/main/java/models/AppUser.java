@@ -1,9 +1,7 @@
 package models;
 
-import annotations.Column;
-import annotations.Entity;
-import annotations.Id;
-import annotations.Table;
+
+import annotations.*;
 
 import javax.print.attribute.standard.DateTimeAtCreation;
 import java.time.LocalDate;
@@ -18,8 +16,8 @@ import java.time.LocalDate;
 @Table(name = "users")
 public class AppUser {
 
-    @Id //Specifies Primary Key of entity
-    @Column(name = "id", nullable = false, unique = true)
+    @Id(name = "user_id") //Specifies Primary Key of entity
+    @Column(name = "user_id", nullable = false, unique = true)
     private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
 
     @Column(name = "username", nullable = false, unique = true)
@@ -31,14 +29,15 @@ public class AppUser {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "firstName", nullable = false, unique = false)
+    @Column(name = "first_name", nullable = false, unique = false)
     private String firstName;
 
-    @Column(name = "lastName", nullable = false, unique = false)
+    @Column(name = "last_name", nullable = false, unique = false)
     private String lastName;
 
     @Column(name = "dob", nullable = false, unique = false)
-    private String dob;//TODO: update format?
+    @Date
+    private String dob;
 
 
     public AppUser() {

@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.*;
 
 /**Establishes the connection to the SQL server
  *
@@ -29,13 +30,15 @@ public class ConnectionFactory {
     /**
      * Directs the connection factory to separate file for the server log in credentials and reads them in
      */
-    private ConnectionFactory() {
-        try {
-            props.load(new FileReader("src/main/resources/application.properties"));
-        } catch (IOException e) {
-            System.out.println("Something went wrong!");
-        }
-    }
+//    private ConnectionFactory() {
+
+
+//        try {
+//            props.load(new FileReader("src/main/resources/application.properties"));
+//        } catch (IOException e) {
+//            System.out.println("Something went wrong!");
+//        }
+//    }
 
     /**
      * checks if we have an instance of connection factory already running
@@ -53,16 +56,17 @@ public class ConnectionFactory {
      * Uses the scraped server login and plugs it in to form a connection with the DB
      * @return
      */
-    public Connection getConnection() {
+    public Connection getConnection(Map<String, String> applicationProperties) {
 
         Connection conn = null;
 
         try {
 
             conn = DriverManager.getConnection(
-                    props.getProperty("host-url"),
-                    props.getProperty("username"),
-                    props.getProperty("password"));
+                    applicationProperties.get("host-url"),
+                    applicationProperties.get("username"),
+                    applicationProperties.get("password")
+            );
 
         } catch (SQLException e) {
             System.out.println("Something went wrong!");
