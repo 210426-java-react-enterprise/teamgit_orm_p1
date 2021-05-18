@@ -46,6 +46,9 @@ public class UserRepo {
                 //check for columns the class has
                 List<ColumnNode> columnNodes = new ArrayList<>();
 
+                String primaryKey = "PRIMARY KEY (";
+                boolean primaryKeyAssigned = false;
+
                 //beware duplicate table names
                 //TODO: alter .append when done testing
                 StringBuilder preparedStatement = new StringBuilder().append("CREATE TABLE ").append("test_" + tableName);
@@ -56,7 +59,7 @@ public class UserRepo {
                     if(f.isAnnotationPresent(Column.class)){
                         Column column = f.getAnnotation(Column.class);
                         columnNodes.add(new ColumnNode(column.name(),column.nullable(), column.unique()));
-                        System.out.printf("Added column %s", f.getAnnotation(Column.class).name());//checking
+                        System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
                         preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
 
                         if(f.getAnnotation(Column.class).type().equals("varchar")){
@@ -84,11 +87,27 @@ public class UserRepo {
                             preparedStatement.append(" unique");
                             //System.out.print(" unique");//checking
                         }
+
+                        if(f.isAnnotationPresent(Id.class) && !primaryKeyAssigned){
+                            primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
+                            primaryKeyAssigned = true;
+                            //System.out.print(primaryKey);//checking
+                        }else if(f.isAnnotationPresent(Id.class) && primaryKeyAssigned){
+                            throw new IllegalArgumentException("Table cannot have more than one primary key!");
+                        }
+
                         preparedStatement.append(", ");
                         //System.out.println(",");//checking
                     }
                 }//end for loop
-                preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+
+                if(primaryKeyAssigned){
+                    preparedStatement.append(primaryKey);
+                }else{
+                    throw new IllegalArgumentException("There is no primary key!");
+                }
+
+                //preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
                 preparedStatement.append(")");
 
                 String sql = preparedStatement.toString();
@@ -97,10 +116,13 @@ public class UserRepo {
 
                 try {
                     PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.executeUpdate();
+                    pstmt.executeUpdate();//table created
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
+
+                //now apply primary key, if any
+
 
             }//end if for checking if class has @Table
         }//end if for checking if class has @Entity
