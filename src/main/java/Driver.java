@@ -30,7 +30,7 @@ public class Driver {
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
 
-        AppUser appUser = new AppUser("usernametest1", "pw", "emailtest1@gmail.com", "User", "Name", "1998-12-20");
+        AppUser appUser = new AppUser("usernametest2", "pw", "emailtest2@gmail.com", "User", "Name", "1998-12-20");
         Map<String, String> applicationProperties = new HashMap<>();
         applicationProperties.put("host-url", "jdbc:postgresql://project0.cmu8byclpwye.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=public");
         applicationProperties.put("username", "postgres");
