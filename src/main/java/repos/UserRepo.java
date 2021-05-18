@@ -12,6 +12,7 @@ import models.ColumnNode;
 import java.sql.Connection;
 import java.util.*;
 import java.sql.*;import java.util.stream.*;
+import exceptions.*;
 
 
 /**
@@ -98,14 +99,15 @@ public class UserRepo {
                     if (rowsInserted != 0 && tableName.equals("users")) {
                         ResultSet rs = pstmt.getGeneratedKeys();
                         while (rs.next()) {
-                            List<Field> idField = Arrays
+                            Field idField = Arrays
                                     .stream(fields)
                                     .filter((field) -> field.isAnnotationPresent(Id.class))
-                                    .collect(java.util.stream.Collectors.toList());
+                                    .findFirst()
+                                    .orElseThrow(()-> new InvalidFieldException("This field does not exist in your Class!"));
 
-                            if (idField.get(0).isAnnotationPresent(Id.class)) {
+                            if (idField.isAnnotationPresent(Id.class)) {
                                 //if user Id annotation is present (plus no duplicate)
-                                Id id = idField.get(0).getAnnotation(Id.class);
+                                Id id = idField.getAnnotation(Id.class);
                                 String idName = id.name();
                                 System.out.println(idName);
                                 String account_insert = "INSERT INTO accounts (" + idName + ") values (?)";
