@@ -126,4 +126,6 @@ public class AppUser {
     public void setDateOfBirth(String dob) {
         this.dob = dob;
     }
+
 }
+

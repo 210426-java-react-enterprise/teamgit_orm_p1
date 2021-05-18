@@ -26,6 +26,7 @@ public class Driver {
         //ORM should create a table for each new Class that is passed in
         //Each Class instance will make up a row of the table
 
+
         //Object has annotations that denote what fields can be persisted
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
@@ -41,6 +42,7 @@ public class Driver {
             System.out.println("+-----------------+");
 
             repos.UserRepo.save(appUser, conn);//repos is a package, UserRepo is class in the package
+
             System.out.println("+-----------------+");
         }catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -49,27 +51,37 @@ public class Driver {
 
 
         /*
+
         Class<?> appClass = appUser.getClass();
         String className = appClass.getSimpleName();
         System.out.println("This is the name of the class: " + className);
         if(appClass.isAnnotationPresent(Entity.class)){
             //anyClass.getAnnotations();
             //anyClass.getDeclaredFields();
+
             //driver.exploreClassMembers(anyClass);
         }
         Field[] fields = appClass.getDeclaredFields();
+
+
+
         //the names we gave the column on the annotation
         for (Field f: appClass.getDeclaredFields()) {
             Column column = f.getAnnotation(Column.class);
             if (column != null)
                 System.out.println(column.name());
         }
+
         //the names of the actual field
         /*for(Field field : fields){
             System.out.println(field.getName());
         }
+
+
         for(Field field : fields){
             System.out.println(field.getType());
+
+
        */
 
 
@@ -142,3 +154,4 @@ public class Driver {
     }
 
 }
+

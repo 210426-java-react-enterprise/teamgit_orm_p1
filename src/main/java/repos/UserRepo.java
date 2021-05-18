@@ -12,6 +12,7 @@ import models.ColumnNode;
 import java.sql.Connection;
 import java.util.*;
 import java.sql.*;import java.util.stream.*;
+import exceptions.*;
 
 
 /**
@@ -32,6 +33,7 @@ public class UserRepo {
             if(clazz.isAnnotationPresent(Table.class)){
                 Table table = clazz.getAnnotation(Table.class);//Table annotation
                 String tableName = table.name();//EX: tableName.name == "users"
+
                 System.out.println(tableName);
 
                 StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ").append(tableName);
@@ -78,6 +80,7 @@ public class UserRepo {
                     Field[] fields = clazz.getDeclaredFields();
                     //We start at i = 1, because sql is indexed at 1, and because field[0] is id
                     for (int i = 1; i <= columnNodes.size(); i++) {
+
                         //because Date in SQL needs some conversion
                         if (fields[i].isAnnotationPresent(annotations.Date.class)){
                             fields[i].setAccessible(true);
@@ -96,6 +99,7 @@ public class UserRepo {
 
                     //from some AppUser instance passed into here from elsewhere?
 
+
                     if (rowsInserted != 0 && tableName.equals("users")) {//if at least 1 row was inserted into "users" table
                         ResultSet rs = pstmt.getGeneratedKeys();
                         while (rs.next()) {
@@ -107,19 +111,24 @@ public class UserRepo {
                             if (idField.get(0).isAnnotationPresent(Id.class)) {
                                 //if user Id annotation is present (plus no duplicate)
                                 Id id = idField.get(0).getAnnotation(Id.class);
+
                                 String idName = id.name();
                                 System.out.println(idName);
                                 String account_insert = "INSERT INTO accounts (" + idName + ") values (?)";
                                 PreparedStatement prepState = conn.prepareStatement(account_insert, new String[] { "account_num" });
                                 prepState.setInt(1, rs.getInt(idName));
+
                                 int account_num = prepState.executeUpdate();//0 or 1, any use for account_num?
+
                             }
                         }
                     }
                 }catch (java.sql.SQLException | java.lang.IllegalAccessException throwables) {
                     throwables.printStackTrace();
                 }
+
             }//end if, checking for table
         }//end if, checking for entity
     }
 }
+

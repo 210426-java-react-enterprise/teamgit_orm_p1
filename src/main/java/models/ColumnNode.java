@@ -1,9 +1,11 @@
 package models;
 
 public class ColumnNode<T> {
+
     private String name;
     private boolean nullable;
     private boolean unique;
+
 
     public ColumnNode(String name, boolean nullable, boolean unique) {
         this.name = name;
@@ -34,4 +36,6 @@ public class ColumnNode<T> {
     public void setUnique(boolean unique) {
         this.unique = unique;
     }
+
 }
+

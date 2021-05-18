@@ -7,4 +7,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Table {
     String name();//name of table (users?)
+
 }
+

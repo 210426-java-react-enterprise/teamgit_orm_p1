@@ -22,5 +22,22 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+<<<<<<< HEAD
 *IntelliJ exclusives
 .idea/
+=======
+
+# IDE-specific files
+.idea/
+*.iml
+
+#Build folders
+#Target folders is what Maven makes for you
+target/
+
+#properties files
+*.properties
+
+#any .jar files
+*.jar
+>>>>>>> 1ff88670f1ee840a764935bf9b492cb3ab4b5a75
