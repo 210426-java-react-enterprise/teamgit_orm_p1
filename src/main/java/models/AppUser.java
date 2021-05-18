@@ -17,26 +17,26 @@ import java.time.LocalDate;
 public class AppUser {
 
     @Id(name = "user_id") //Specifies Primary Key of entity
-    @Column(name = "user_id", nullable = false, unique = true)
+    @Column(name = "user_id", nullable = false, unique = true, type = "serial")
     private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
 
-    @Column(name = "username", nullable = false, unique = true)
+    @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20")
     private String username;
 
-    @Column(name = "password", nullable = false, unique = false)
+    @Column(name = "password", nullable = false, unique = false, type = "varchar", length = "255")
     private String password;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, type = "varchar", length = "255")
     private String email;
 
-    @Column(name = "first_name", nullable = false, unique = false)
+    @Column(name = "first_name", nullable = false, unique = false, type = "varchar", length = "25")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, unique = false)
+    @Column(name = "last_name", nullable = false, unique = false, type = "varchar", length = "25")
     private String lastName;
 
-    @Column(name = "dob", nullable = false, unique = false)
     @Date
+    @Column(name = "dob", nullable = false, unique = false, type = "date")
     private String dob;
 
 
@@ -55,7 +55,9 @@ public class AppUser {
      * @param dob String
      */
 
+
     //dob should be YYYY-MM-DD format, regex
+    @Constructor(name = "users")
     public AppUser(String username, String password, String email, String firstName, String lastName, String dob) {
         System.out.println("Registering user...");
         this.username = username;
@@ -65,67 +67,73 @@ public class AppUser {
         this.lastName = lastName;
         this.dob = dob;
     }
-
+    //Getters
+    @Getter(name = "user_id")
     public static int getId() {
         return id;
     }
 
+    @Getter(name = "username")
+    public String getUsername() {
+        return username;
+    }
+
+    @Getter(name = "password")
+    public String getPassword() {
+        return password;
+    }
+    @Getter(name = "first_name")
+    public String getFirstName() {
+        return firstName;
+    }
+    @Getter(name = "last_name")
+    public String getLastName() {
+        return lastName;
+    }
+    @Getter(name = "email")
+    public String getEmail() {
+        return email;
+    }
+
+    @Getter(name = "dob")
+    public String getDob() {
+        return dob;
+    }
+
+    //Setters
+    @Setter(name = "user_id")
     public int setId(int id) {
         this.id = id;
         return id;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
+    @Setter(name = "username")
     public void setUsername(String username) {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
+    @Setter(name = "password")
     public void setPassword(String password) {
         this.password = password;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public String getDob() {
-        return dob;
-    }
-
+    @Setter(name = "email")
     public void setEmail(String email) {
         this.email = email;
     }
 
-    public String getFirstName() {
-        return firstName;
-    }
-
+    @Setter(name = "first_name")
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
 
-    public String getLastName() {
-        return lastName;
-    }
-
+    @Setter(name = "last_name")
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
 
-    public String getDateOfBirth() {
-        return dob;
-    }
-
-    public void setDateOfBirth(String dob) {
+    @Setter(name = "dob")
+    public void setDob(String dob) {
         this.dob = dob;
     }
-
 }
-

@@ -41,7 +41,8 @@ public class Driver {
             Driver driver = new Driver();
             System.out.println("+-----------------+");
 
-            repos.UserRepo.save(appUser, conn);//repos is a package, UserRepo is class in the package
+            //repos.UserRepo.save(appUser, conn);//repos is a package, UserRepo is class in the package
+            repos.UserRepo.createTable(appUser, conn);
 
             System.out.println("+-----------------+");
         }catch (SQLException throwables) {
