@@ -33,6 +33,10 @@ public class UserRepo {
         "password" varchar(255) NOT NULL,
         email varchar(255) unique NOT null
     );*/
+
+    /**
+     * @author Thomas
+     */
     public static void createTable(Object o, Connection conn){
         //check a class to determine columns for table.
         Class<?> clazz = o.getClass();
