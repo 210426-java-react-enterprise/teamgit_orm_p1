@@ -13,6 +13,9 @@ import java.time.LocalDate;
  */
 
 @Entity()
+@Connection(url = "jdbc:postgresql://project0.cmu8byclpwye.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
+            username = "postgres",
+            password = "Octopu5!")
 @Table(name = "users")
 public class AppUser {
 

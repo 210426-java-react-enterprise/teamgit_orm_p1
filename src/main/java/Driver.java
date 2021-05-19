@@ -17,6 +17,13 @@ import java.sql.*;
 public class Driver {
 
     public static void main(String[] args) throws MalformedURLException, ClassNotFoundException {
+        //AppUser contains @Connection with application properties injected
+
+        AppUser appUser = new AppUser("usernametest2", "pw", "emailtest2@gmail.com", "User", "Name", "1998-12-20");
+        System.out.println("+-----------------+");
+        repos.UserRepo.save(appUser);
+        System.out.println("+-----------------+");
+
         //users data: PK user_id, username, password, firstname, lastname, email, dob
         //accounts: PK account_id, FK user_id, balance
         //transactions: FK account_id, transaction_id, date/time, previous_balance, change (deposit + or withdrawal -)
@@ -29,6 +36,8 @@ public class Driver {
         //Object has annotations that denote what fields can be persisted
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
+
+        /* This code was before we implemented annotation "Connection.class"
 
         AppUser appUser = new AppUser("usernametest2", "pw", "emailtest2@gmail.com", "User", "Name", "1998-12-20");
         Map<String, String> applicationProperties = new HashMap<>();
@@ -45,6 +54,8 @@ public class Driver {
         }catch (SQLException throwables) {
             throwables.printStackTrace();
         };
+
+         */
 
 
 
@@ -105,6 +116,8 @@ public class Driver {
 
     }//end main
 
+
+    /*
     public List<Class<?>> getClassesInPackageWithConstraints(String packageName, Predicate<Class<?>> predicate) throws MalformedURLException, ClassNotFoundException {
 
         List<Class<?>> packageClasses = new ArrayList<>();
@@ -151,4 +164,6 @@ public class Driver {
         }
     }
 
+    */
 }
+
