@@ -2,6 +2,9 @@ import annotations.Column;
 import annotations.Entity;
 import models.AppUser;
 import repos.*;
+import models.TransactionValues;
+import models.UserAccount;
+
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -43,10 +46,14 @@ public class Driver {
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
 
-
         /* This code was before we implemented annotation "Connection.class"
 
         AppUser appUser = new AppUser("usernametest2", "pw", "emailtest2@gmail.com", "User", "Name", "1998-12-20");
+
+   
+        appUser.setId(34);
+        UserAccount userAcc = new UserAccount(7, 0);
+        TransactionValues transactionValues = new TransactionValues(0, 700);
         Map<String, String> applicationProperties = new HashMap<>();
         applicationProperties.put("host-url", "jdbc:postgresql://project0.cmu8byclpwye.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=public");
         applicationProperties.put("username", "postgres");
@@ -56,9 +63,10 @@ public class Driver {
             Driver driver = new Driver();
             System.out.println("+-----------------+");
 
-            //repos.UserRepo.save(appUser, conn);//repos is a package, UserRepo is class in the package
-            repos.UserRepo.createTable(appUser, conn);
 
+            //repos.UserRepo.save(appUser, conn);//repos is a package, UserRepo is class in the package
+            //repos.UserRepo.createTable(appUser, conn);
+            repos.AccountRepo.withdraw(appUser, userAcc, conn);
             System.out.println("+-----------------+");
         }catch (SQLException throwables) {
             throwables.printStackTrace();
