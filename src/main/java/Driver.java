@@ -36,11 +36,13 @@ public class Driver {
         //ORM takes in Object
         //Extract from Object to access its data using reflection
         //ORM should create a table for each new Class that is passed in
-            //Each Class instance will make up a row of the table
+        //Each Class instance will make up a row of the table
+
 
         //Object has annotations that denote what fields can be persisted
         //ORM scrapes the Class for certain annotations that label what data/fields it's looking for
         //ORM takes those fields and persists it to database
+
 
         /* This code was before we implemented annotation "Connection.class"
 
@@ -54,7 +56,9 @@ public class Driver {
             Driver driver = new Driver();
             System.out.println("+-----------------+");
 
-            repos.UserRepo.save(appUser, conn);
+            //repos.UserRepo.save(appUser, conn);//repos is a package, UserRepo is class in the package
+            repos.UserRepo.createTable(appUser, conn);
+
             System.out.println("+-----------------+");
         }catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -75,9 +79,9 @@ public class Driver {
 
             //driver.exploreClassMembers(anyClass);
         }
-
-
         Field[] fields = appClass.getDeclaredFields();
+
+
 
         //the names we gave the column on the annotation
         for (Field f: appClass.getDeclaredFields()) {

@@ -24,7 +24,124 @@ import exceptions.*;
 public class UserRepo {
 
 
-    public void save(Object o) {
+
+    /*
+    CREATE TABLE users (
+        user_id serial NOT null constraint pk_user primary key,
+        first_name varchar(25) NOT NULL,
+        last_name varchar(25) NOT NULL,
+        username varchar(20) unique NOT null,
+        "password" varchar(255) NOT NULL,
+        email varchar(255) unique NOT null
+    );*/
+
+    /**
+     * @author Thomas
+     */
+    public static void createTable(Object o, Connection conn){
+        //check a class to determine columns for table.
+        Class<?> clazz = o.getClass();
+
+        if(clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
+            if(clazz.isAnnotationPresent(Table.class)) {
+                Table table = clazz.getAnnotation(Table.class);//Table annotation
+                String tableName = table.name();//EX: tableName.name == "users"
+                System.out.println(tableName);
+
+                //check for columns the class has
+                List<ColumnNode> columnNodes = new ArrayList<>();
+
+                String primaryKey = "PRIMARY KEY (";
+                boolean primaryKeyAssigned = false;
+
+                //beware duplicate table names
+                //TODO: alter .append when done testing
+                StringBuilder preparedStatement = new StringBuilder().append("CREATE TABLE ").append("test_" + tableName);
+                preparedStatement.append("(");
+
+
+                for (Field f: clazz.getDeclaredFields()) {
+                    if(f.isAnnotationPresent(Column.class)){
+                        Column column = f.getAnnotation(Column.class);
+                        columnNodes.add(new ColumnNode(column.name(),column.nullable(), column.unique()));
+                        System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
+                        preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+
+                        if(f.getAnnotation(Column.class).type().equals("varchar")){
+                            preparedStatement.append(" VARCHAR(");
+                            preparedStatement.append(f.getAnnotation(Column.class).length());
+                            preparedStatement.append(")");
+                            //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
+                        }else if(f.getAnnotation(Column.class).type().equals("date")){
+                            preparedStatement.append(" DATE");
+                            //System.out.print(" DATE");//checking
+                        }else if(f.getAnnotation(Column.class).type().equals("serial")){
+                            preparedStatement.append(" SERIAL");
+                            //System.out.print(" SERIAL");//checking
+                        }else{//if no type is found...
+                            //System.out.println(" INVALID");
+                            throw new IllegalStateException("Invalid data type!");
+                        }
+
+                        if(!f.getAnnotation(Column.class).nullable()){
+                            preparedStatement.append(" not null");
+                            //System.out.print(" not null");//checking
+                        }
+
+                        if(f.getAnnotation(Column.class).unique()){
+                            preparedStatement.append(" unique");
+                            //System.out.print(" unique");//checking
+                        }
+
+                        if(f.isAnnotationPresent(Id.class) && !primaryKeyAssigned){
+                            primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
+                            primaryKeyAssigned = true;
+                            //System.out.print(primaryKey);//checking
+                        }else if(f.isAnnotationPresent(Id.class) && primaryKeyAssigned){
+                            throw new IllegalArgumentException("Table cannot have more than one primary key!");
+                        }
+
+                        preparedStatement.append(", ");
+                        //System.out.println(",");//checking
+                    }
+                }//end for loop
+
+                if(primaryKeyAssigned){
+                    preparedStatement.append(primaryKey);
+                }else{
+                    throw new IllegalArgumentException("There is no primary key!");
+                }
+
+                //preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                preparedStatement.append(")");
+
+                String sql = preparedStatement.toString();
+
+                System.out.println(sql);//Just to verify
+
+                try {
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.executeUpdate();//table created
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+                //now apply primary key, if any
+
+
+            }//end if for checking if class has @Table
+        }//end if for checking if class has @Entity
+        else{
+            System.out.println("Cannot create a table from class " + clazz.getName());
+        }
+
+    }//end createTable
+
+
+   
+
+  
+  public void save(Object o) {
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)){
             Class<?> clazz = o.getClass();
@@ -39,7 +156,6 @@ public class UserRepo {
 
                     List<ColumnNode> columnNodes = new ArrayList<>();
 
-
                     for (Field f : clazz.getDeclaredFields()) {
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
@@ -49,9 +165,7 @@ public class UserRepo {
                                 //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
                                 //values (username, password, email, firstName, lastName, dob)
                             }
-
                         }
-
                     }
 
                     preparedStatement.append(" (");
@@ -63,6 +177,7 @@ public class UserRepo {
 
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
                     preparedStatement.append(") VALUES (");
+
 
                     for (int i = 0; i < columnNodes.size(); i++) {
                         preparedStatement.append("?, ");
@@ -92,6 +207,7 @@ public class UserRepo {
                             }
                         }
 
+
                         int rowsInserted = pstmt.executeUpdate();
 
                         //from some AppUser instance passed into here from elsewhere, we construct an accounts table
@@ -114,11 +230,13 @@ public class UserRepo {
                                     prepState.setInt(1, rs.getInt(idName));
                                     int account_num = prepState.executeUpdate();
                                 }
+
                             }
                         }
                     } catch (java.sql.SQLException | java.lang.IllegalAccessException throwables) {
                         throwables.printStackTrace();
                     }
+
                 }//end if
             }//end if
         } catch (SQLException e) {
@@ -126,6 +244,7 @@ public class UserRepo {
         }
     }
 
+  
     public Object findUserByUsernameAndPassword(Object o){
         Object result = null;
         //reflect object
@@ -143,21 +262,19 @@ public class UserRepo {
             //note: make sure you have an if statement that controls .getString or .getInt or .getDate depending on constructor parameters
             //you can read what parameters a given constructor takes using Class[] parameterTypes = constructor.getParameterTypes();
 
-
         return result;
-
     }
+  
 
     //TODO pending implementation
     public boolean isEmailAvailable(String email){
-
         return false;
     }
+  
+  
     //TODO pending implementation
     public boolean isUsernameAvailable(String username){
-
         return false;
     }
 }
-
 
