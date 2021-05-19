@@ -1,6 +1,7 @@
 import annotations.Column;
 import annotations.Entity;
 import models.AppUser;
+import repos.*;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -16,12 +17,16 @@ import java.sql.*;
 
 public class Driver {
 
+
     public static void main(String[] args) throws MalformedURLException, ClassNotFoundException {
+
+        UserRepo userRepo = new UserRepo();
+
         //AppUser contains @Connection with application properties injected
 
         AppUser appUser = new AppUser("usernametest2", "pw", "emailtest2@gmail.com", "User", "Name", "1998-12-20");
         System.out.println("+-----------------+");
-        repos.UserRepo.save(appUser);
+        userRepo.save(appUser);
         System.out.println("+-----------------+");
 
         //users data: PK user_id, username, password, firstname, lastname, email, dob

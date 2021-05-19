@@ -23,7 +23,8 @@ import exceptions.*;
  */
 public class UserRepo {
 
-    public static void save(Object o) {
+
+    public void save(Object o) {
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)){
             Class<?> clazz = o.getClass();
@@ -123,6 +124,39 @@ public class UserRepo {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public Object findUserByUsernameAndPassword(Object o){
+        Object result = null;
+        //reflect object
+
+        //get fields username and password
+
+        //check with db, if doesn't exist, return null
+
+        //if does exist:
+
+        //get all fields of object
+        //extract constructor and get a .newInstance()
+        //use reflection to get all the setters of the constructor and set values with the
+        //field values from database (rs.getString("column_label"))
+            //note: make sure you have an if statement that controls .getString or .getInt or .getDate depending on constructor parameters
+            //you can read what parameters a given constructor takes using Class[] parameterTypes = constructor.getParameterTypes();
+
+
+        return result;
+
+    }
+
+    //TODO pending implementation
+    public boolean isEmailAvailable(String email){
+
+        return false;
+    }
+    //TODO pending implementation
+    public boolean isUsernameAvailable(String username){
+
+        return false;
     }
 }
 
