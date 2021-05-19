@@ -23,8 +23,6 @@ import exceptions.*;
  */
 public class UserRepo {
 
-    private static Connection conn;
-
     public static void save(Object o) {
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)){
