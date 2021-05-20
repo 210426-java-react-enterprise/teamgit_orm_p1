@@ -27,9 +27,9 @@ public class Driver {
 
         //AppUser contains @Connection with application properties injected
 
-        AppUser appUser = new AppUser("usernametest2", "pw", "emailtest2@gmail.com", "User", "Name", "1998-12-20");
+        AppUser appUser = new AppUser("swekevin", "password!", "kevin.chang@revature.net", "Kevin", "Chang", "1998-12-20");
         System.out.println("+-----------------+");
-        userRepo.save(appUser);
+        userRepo.execute(appUser);
         System.out.println("+-----------------+");
 
         //users data: PK user_id, username, password, firstname, lastname, email, dob

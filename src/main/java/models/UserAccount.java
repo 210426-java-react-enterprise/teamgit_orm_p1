@@ -11,13 +11,13 @@ import annotations.*;
 public class UserAccount {
 
     @Id(name = "account_num")
-    @Column(name = "account_num", nullable = false, unique = true)
+    @Column(name = "account_num", nullable = false, unique = true, type = "serial")
     private static int account_num;
 
-    @Column(name = "user_id", nullable = false, unique = true)
+    @Column(name = "user_id", nullable = false, unique = true, type = "int")
     private static int id;
 
-    @Column(name = "balance", nullable = false, unique = false)
+    @Column(name = "balance", nullable = false, unique = false, type = "double", length = "12,2")
     private double balance;
 
     public static int getAccount_num() {

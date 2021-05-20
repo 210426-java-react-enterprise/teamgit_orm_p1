@@ -38,102 +38,113 @@ public class UserRepo {
     /**
      * @author Thomas
      */
-    public static void createTable(Object o, Connection conn){
-        //check a class to determine columns for table.
-        Class<?> clazz = o.getClass();
+    public static void buildTable(Object o, Connection conn) {
+            //check a class to determine columns for table.
+            Class<?> clazz = o.getClass();
 
-        if(clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
-            if(clazz.isAnnotationPresent(Table.class)) {
-                Table table = clazz.getAnnotation(Table.class);//Table annotation
-                String tableName = table.name();//EX: tableName.name == "users"
-                System.out.println(tableName);
+            System.out.println("Running buildTable()...");
 
-                //check for columns the class has
-                List<ColumnNode> columnNodes = new ArrayList<>();
+            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
+                if (clazz.isAnnotationPresent(Table.class)) {
+                    Table table = clazz.getAnnotation(Table.class);//Table annotation
+                    String tableName = table.name();//EX: tableName.name == "users"
+                    System.out.println("Inside createTable: " + tableName);
 
-                String primaryKey = "PRIMARY KEY (";
-                boolean primaryKeyAssigned = false;
+                    //check for columns the class has
+                    List<ColumnNode> columnNodes = new ArrayList<>();
 
-                //beware duplicate table names
-                //TODO: alter .append when done testing
-                StringBuilder preparedStatement = new StringBuilder().append("CREATE TABLE ").append("test_" + tableName);
-                preparedStatement.append("(");
+                    String primaryKey = "PRIMARY KEY (";
+                    boolean primaryKeyAssigned = false;
+
+                    //beware duplicate table names
+                    //TODO: alter .append when done testing
+                    StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName);
+                    //preparedStatement.append("(");
 
 
-                for (Field f: clazz.getDeclaredFields()) {
-                    if(f.isAnnotationPresent(Column.class)){
-                        Column column = f.getAnnotation(Column.class);
-                        columnNodes.add(new ColumnNode(column.name(),column.nullable(), column.unique()));
-                        System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
-                        preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+                    for (Field f : clazz.getDeclaredFields()) {
+                        if (f.isAnnotationPresent(Column.class)) {
+                            Column column = f.getAnnotation(Column.class);
+                            columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
+                            System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
+                            preparedStatement.append("ADD [");
+                            preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+                            preparedStatement.append("ADD ] ");
 
-                        if(f.getAnnotation(Column.class).type().equals("varchar")){
-                            preparedStatement.append(" VARCHAR(");
-                            preparedStatement.append(f.getAnnotation(Column.class).length());
-                            preparedStatement.append(")");
-                            //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
-                        }else if(f.getAnnotation(Column.class).type().equals("date")){
-                            preparedStatement.append(" DATE");
-                            //System.out.print(" DATE");//checking
-                        }else if(f.getAnnotation(Column.class).type().equals("serial")){
-                            preparedStatement.append(" SERIAL");
-                            //System.out.print(" SERIAL");//checking
-                        }else{//if no type is found...
-                            //System.out.println(" INVALID");
-                            throw new IllegalStateException("Invalid data type!");
+                            if (f.getAnnotation(Column.class).type().equals("varchar")) {
+                                preparedStatement.append(" VARCHAR(");
+                                preparedStatement.append(f.getAnnotation(Column.class).length());
+                                preparedStatement.append(")");
+                                //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
+                            } else if (f.getAnnotation(Column.class).type().equals("date")) {
+                                preparedStatement.append(" DATE");
+                                //System.out.print(" DATE");//checking
+                            } else if (f.getAnnotation(Column.class).type().equals("double")) {
+                                preparedStatement.append(" DOUBLE(");
+                                preparedStatement.append(f.getAnnotation(Column.class).length());
+                                preparedStatement.append(")");
+                            } else if (f.getAnnotation(Column.class).type().equals("serial")) {
+                                preparedStatement.append(" SERIAL");
+                                //System.out.print(" SERIAL");//checking
+                            } else {//if no type is found...
+                                //System.out.println(" INVALID");
+                                throw new IllegalStateException("Invalid data type!");
+                            }
+
+                            if (!f.getAnnotation(Column.class).nullable()) {
+                                preparedStatement.append(" not null");
+                                //System.out.print(" not null");//checking
+                            }
+
+                            if (f.getAnnotation(Column.class).unique()) {
+                                preparedStatement.append(" unique");
+                                //System.out.print(" unique");//checking
+                            }
+
+                            if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
+                                primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
+                                primaryKeyAssigned = true;
+                                //System.out.print(primaryKey);//checking
+
+                            //TODO make composite key
+                            } else if (f.isAnnotationPresent(Id.class) && primaryKeyAssigned) {
+                                throw new IllegalArgumentException("Table cannot have more than one primary key!");
+                            }
+
+                            preparedStatement.append(", ");
+                            //System.out.println(",");//checking
                         }
+                    }//end for loop
 
-                        if(!f.getAnnotation(Column.class).nullable()){
-                            preparedStatement.append(" not null");
-                            //System.out.print(" not null");//checking
-                        }
-
-                        if(f.getAnnotation(Column.class).unique()){
-                            preparedStatement.append(" unique");
-                            //System.out.print(" unique");//checking
-                        }
-
-                        if(f.isAnnotationPresent(Id.class) && !primaryKeyAssigned){
-                            primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
-                            primaryKeyAssigned = true;
-                            //System.out.print(primaryKey);//checking
-                        }else if(f.isAnnotationPresent(Id.class) && primaryKeyAssigned){
-                            throw new IllegalArgumentException("Table cannot have more than one primary key!");
-                        }
-
-                        preparedStatement.append(", ");
-                        //System.out.println(",");//checking
+                    //TODO Doesn't handle composite keys yet
+                    if (primaryKeyAssigned) {
+                        preparedStatement.append(primaryKey);
+                    } else {
+                        throw new IllegalArgumentException("There is no primary key!");
                     }
-                }//end for loop
 
-                if(primaryKeyAssigned){
-                    preparedStatement.append(primaryKey);
-                }else{
-                    throw new IllegalArgumentException("There is no primary key!");
-                }
+                    //preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                    preparedStatement.append(")");
 
-                //preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                preparedStatement.append(")");
+                    String sql = preparedStatement.toString();
 
-                String sql = preparedStatement.toString();
+                    System.out.println(sql);//Just to verify
 
-                System.out.println(sql);//Just to verify
+                    try {
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.executeUpdate();//table created
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
 
-                try {
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.executeUpdate();//table created
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-                //now apply primary key, if any
+                    //now apply primary key, if any
 
 
-            }//end if for checking if class has @Table
-        }//end if for checking if class has @Entity
-        else{
-            System.out.println("Cannot create a table from class " + clazz.getName());
-        }
+                }//end if for checking if class has @Table
+            }//end if for checking if class has @Entity
+            else {
+                System.out.println("Cannot create a table from class " + clazz.getName());
+            }
 
     }//end createTable
 
@@ -141,9 +152,8 @@ public class UserRepo {
    
 
   
-  public void save(Object o) {
+  public void save(Object o, Connection conn) {
 
-        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)){
             Class<?> clazz = o.getClass();
 
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
@@ -239,10 +249,46 @@ public class UserRepo {
 
                 }//end if
             }//end if
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+    }
+
+
+    /*
+    SELECT * FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_NAME = N'Employees'
+
+    or
+
+    IF OBJECT_ID('table_name', 'U') IS NOT NULL
+
+    "CREATE TABLE IF NOT EXISTS " + tablename
+     */
+
+    public void execute(Object o){
+        Class<?> clazz = o.getClass();
+        System.out.println("Marker 1");
+        try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+
+            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
+                System.out.println("Marker 2");
+                if (clazz.isAnnotationPresent(Table.class)) {
+                    System.out.println("Marker 3");
+                    Table table = clazz.getAnnotation(Table.class);
+                    String tablename = table.name();//if tableName.name == "users"
+                    String sql = ("CREATE TABLE IF NOT EXISTS " + tablename + "()");
+                    Statement stmt = conn.createStatement();
+                    stmt.execute(sql);
+                    buildTable(o, conn);
+                    System.out.println("Marker 4");
+
+                }
+            }
+        } catch (SQLException throwables) {
+
+            //throwables.printStackTrace();
         }
     }
+
 
   
     public Object findUserByUsernameAndPassword(Object o){
