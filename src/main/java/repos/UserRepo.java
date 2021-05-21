@@ -132,8 +132,10 @@ public class UserRepo {
                             }
 
                             //System.out.println(sql);//Just to verify
+                            if(!sqlStatements.contains(sql)){
+                                sqlStatements.add(sql);//no duplicates allowed
+                            }
 
-                            sqlStatements.add(sql);
 
                             primaryKeyAssigned = false;
                         }
@@ -153,27 +155,13 @@ public class UserRepo {
 
                     System.out.println(sql);//Just to verify*/
 
-                    //TODO: find out why duplicates exist
-                    //remove any duplicates that exist
-                    Collections.sort(sqlStatements);
-                    int size = sqlStatements.size();
-                    for(int i = 0; i < size; i++){
-                        if(i+1 < size) {
-                            if (sqlStatements.get(i).equals(sqlStatements.get(i + 1))) {
-                                sqlStatements.remove(i);
-                                size--;
-                                //i--;//because size is reduced by 1
-                            }
-                        }
-                    }
-
+                    //TODO: figure out why duplicate statements exist in sqlStatements
                     //execute an sql statement for each column needing to be added
-                    //TODO: make sure this is not commented out when pushed
                     if(sqlStatements.size() > 0) {//must be at least 1 column to add
                         try {
                             //reverse order so that DROP COLUMN statements are executed first.
-                            for(int i = sqlStatements.size()-1; i >= 0; i--){
-                                PreparedStatement pstmt = conn.prepareStatement(sqlStatements.get(i));
+                            for(String q : sqlStatements){
+                                PreparedStatement pstmt = conn.prepareStatement(q);
                                 System.out.println(pstmt.toString());
                                 pstmt.executeUpdate();
                             }
