@@ -17,7 +17,7 @@ import java.time.LocalDate;
             url = "jdbc:postgresql://project0-accounts.comfkmj3hfze.us-west-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
             username = "thomas",
             password = "revature")
-@Table(name = "users")
+@Table(name = "test_users")
 public class AppUser {
 
     @Id(name = "user_id") //Specifies Primary Key of entity
@@ -42,18 +42,6 @@ public class AppUser {
     @Date
     @Column(name = "dob", nullable = false, unique = false, type = "date")
     private String dob;
-
-
-    /**
-     * Assembles the present values of the params to assemble an AppUser object to be more easily passed around
-     * Values for the params will be harvested at registration.
-     * @param username String
-     * @param password String
-     * @param email String
-     * @param firstName String
-     * @param lastName String
-     * @param dob String
-     */
 
     @Constructor(name = "users", type = "noargs")
     public AppUser(){
