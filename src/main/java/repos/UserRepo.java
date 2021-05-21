@@ -39,7 +39,7 @@ public class UserRepo {
     /**
      * @author Thomas
      */
-    public static void buildTable(Object o, Connection conn) {
+    public static void addColumns(Object o, Connection conn) {
             //check a class to determine columns for table.
             Class<?> clazz = o.getClass();
 
@@ -273,23 +273,18 @@ public class UserRepo {
     "CREATE TABLE IF NOT EXISTS " + tablename
      */
 
-    public void execute(Object o){
+    public void create(Object o){
         Class<?> clazz = o.getClass();
-        System.out.println("Marker 1");
         try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
 
-            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
-                System.out.println("Marker 2");
+            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw
                 if (clazz.isAnnotationPresent(Table.class)) {
-                    System.out.println("Marker 3");
                     Table table = clazz.getAnnotation(Table.class);
                     String tableName = table.name();//if tableName.name == "users"
                     String sql = ("CREATE TABLE IF NOT EXISTS " + tableName + "()");
                     Statement stmt = conn.createStatement();
                     stmt.execute(sql);
-                    buildTable(o, conn);
-                    System.out.println("Marker 4");
-
+                    addColumns(o, conn);
                 }
             }
         } catch (SQLException throwables) {
@@ -305,6 +300,9 @@ public class UserRepo {
     //TODO implement a SELECT method
     public Object select(Object o){
         Class<?> clazz = o.getClass();
+        //This will serve as the return object, returns null if proper algorithm does not execute
+        Object returnObject = null;
+
         try(Connection conn = ConnectionFactory.getInstance().getConnection(o)){
             if(clazz.isAnnotationPresent((Entity.class))){
                 if (clazz.isAnnotationPresent(Table.class)){
@@ -373,34 +371,39 @@ public class UserRepo {
                     }
                     ResultSet rs = pstmt.executeQuery();
                     while (rs.next()){
-                        //TODO Constructor to mirror Object, our Setter methods are currently being sent to nowhere
+                        //Creates an instance of the object to then invoke its methods
+                        returnObject = clazz.newInstance();
+                        //gathers all the methods
                         Method[] methods = clazz.getDeclaredMethods();
                         for (int i = 0; i <methods.length; i++) {
+                            System.out.println(methods[i]);
                             if(methods[i].isAnnotationPresent(Setter.class)){
                                 String methodName = methods[i].getAnnotation(Setter.class).name();
                                     for (Field field : fields) {
                                         String columnName = field.getAnnotation(Column.class).name();
-                                        if(methodName == columnName){
+                                        if(methodName.equals(columnName)){
                                             String type = field.getAnnotation(Column.class).type();
                                             switch(type) {
                                                 case "varchar":
                                                     methods[i].setAccessible(true);
-                                                    methods[i].invoke(rs.getString(columnName), String.class);
+                                                    //invoke method on the returnObject to set its values
+                                                    methods[i].invoke(returnObject, rs.getString(columnName));
                                                     methods[i].setAccessible(false);
                                                     break;
                                                 case "date":
                                                     methods[i].setAccessible(true);
-                                                    methods[i].invoke(String.valueOf(rs.getDate(columnName)), String.class);
+                                                    methods[i].invoke(returnObject, String.valueOf(rs.getDate(columnName)));
                                                     methods[i].setAccessible(false);
                                                     break;
                                                 case "double":
                                                     methods[i].setAccessible(true);
-                                                    methods[i].invoke(rs.getDouble(columnName), Double.class);
+                                                    methods[i].invoke(returnObject, rs.getDouble(columnName));
                                                     methods[i].setAccessible(false);
                                                     break;
-                                                case "int":
+                                                case "int"://TODO: something for this?
+                                                case "serial":
                                                     methods[i].setAccessible(true);
-                                                    methods[i].invoke(rs.getInt(columnName), Integer.class);
+                                                    methods[i].invoke(returnObject, rs.getInt(columnName));
                                                     methods[i].setAccessible(false);
                                                     break;
                                                 default:
@@ -409,16 +412,15 @@ public class UserRepo {
                                         }
                                     }
                             }
-
                         }
                     }
                 }
             }
-        } catch (SQLException | IllegalAccessException | InvocationTargetException e) {
+
+        } catch (SQLException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
             e.printStackTrace();
         }
-        //TODO FIX RETURN TYPE
-        return o;
+        return returnObject;
     }
 
     //TODO if at all

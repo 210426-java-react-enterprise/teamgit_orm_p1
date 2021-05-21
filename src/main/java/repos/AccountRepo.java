@@ -52,12 +52,10 @@ public class AccountRepo {
                         if (column != null) {
                             if (uf.getAnnotation(Id.class).name().equals("user_id")) {
                                 uid = uf.getAnnotation(Id.class).name();
-                            }
                         }
-                    }
+                    }//Set bal = bal + deposit
                     preparedStatement.append(" SET ").append(bal).append(" = ").append(bal).append(" + ").append(TransactionValues.getDeposit());
                     preparedStatement.append(" WHERE ").append(uid).append(" = ").append(AppUser.getId());
-                    System.out.println(AppUser.getId());
 
                     String sql = preparedStatement.toString();
                     try {
@@ -70,14 +68,14 @@ public class AccountRepo {
                     }
                 }//end if
             }//end if
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
         }
 
 
-    }
+    } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
 
-    public static void withdraw(Object o, Object acc) {
+        public static void withdraw(Object o, Object acc) {
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
 
             Class<?> clazz = acc.getClass();
