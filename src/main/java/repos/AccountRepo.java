@@ -52,28 +52,29 @@ public class AccountRepo {
                         if (column != null) {
                             if (uf.getAnnotation(Id.class).name().equals("user_id")) {
                                 uid = uf.getAnnotation(Id.class).name();
+                            }
+                        }//Set bal = bal + deposit
+                        preparedStatement.append(" SET ").append(bal).append(" = ").append(bal).append(" + ").append(TransactionValues.getDeposit());
+                        preparedStatement.append(" WHERE ").append(uid).append(" = ").append(AppUser.getId());
+
+                        String sql = preparedStatement.toString();
+                        try {
+                            PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
+
+                            pstmt.executeUpdate();
+                            System.out.println("Check the database!");
+                        } catch (SQLException throwables) {
+                            throwables.printStackTrace();
                         }
-                    }//Set bal = bal + deposit
-                    preparedStatement.append(" SET ").append(bal).append(" = ").append(bal).append(" + ").append(TransactionValues.getDeposit());
-                    preparedStatement.append(" WHERE ").append(uid).append(" = ").append(AppUser.getId());
-
-                    String sql = preparedStatement.toString();
-                    try {
-                        PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
-
-                        pstmt.executeUpdate();
-                        System.out.println("Check the database!");
-                    } catch (SQLException throwables) {
-                        throwables.printStackTrace();
-                    }
+                    }//end if
                 }//end if
-            }//end if
-        }
+            }
 
 
-    } catch (SQLException throwables) {
+        } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
 
         public static void withdraw(Object o, Object acc) {
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {

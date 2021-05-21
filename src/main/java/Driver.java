@@ -32,14 +32,10 @@ public class Driver {
 //        userRepo.execute(appUser);
 //        System.out.println("+-----------------+");
         AppUser appUser2 = new AppUser();
+        AppUser a = new AppUser();
 
+        userRepo.create(a);
 
-        appUser2.setUsername("swekevin");
-        appUser2.setPassword("password");
-
-        AppUser o = (AppUser) userRepo.select(appUser2);
-
-        System.out.println(o.toString());
         //users data: PK user_id, username, password, firstname, lastname, email, dob
         //accounts: PK account_id, FK user_id, balance
         //transactions: FK account_id, transaction_id, date/time, previous_balance, change (deposit + or withdrawal -)

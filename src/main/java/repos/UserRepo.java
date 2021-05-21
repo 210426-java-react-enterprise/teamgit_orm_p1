@@ -1,20 +1,14 @@
 package repos;
 
-import models.AppUser;
-
 import java.lang.reflect.*;
 import java.util.List;
 import annotations.*;
-
 import java.util.ArrayList;
-import java.util.List;
-
-import org.postgresql.util.PSQLException;
 import util.ConnectionFactory;
 import models.ColumnNode;
 import java.sql.Connection;
 import java.util.*;
-import java.sql.*;import java.util.stream.*;
+import java.sql.*;
 import exceptions.*;
 
 
@@ -25,8 +19,6 @@ import exceptions.*;
  * @author Chris Levano
  */
 public class UserRepo {
-
-
 
     /*
     CREATE TABLE users (
@@ -53,8 +45,6 @@ public class UserRepo {
                     String tableName = table.name();//EX: tableName.name == "users"
                     System.out.println("Inside createTable: " + tableName);
 
-                    //check for columns the class has
-                    List<ColumnNode> columnNodes = new ArrayList<>();
 
                     StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
                             .append(" add constraint ");
@@ -67,14 +57,9 @@ public class UserRepo {
                         if (f.isAnnotationPresent(Column.class)) {
                             Column column = f.getAnnotation(Column.class);
 
-                            StringBuilder dropStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
-                                    .append(" DROP COLUMN IF EXISTS ");
                             StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
                                     .append(" ADD COLUMN IF NOT EXISTS ");
 
-
-                            columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
-                            //System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
                             preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
 
                             switch (f.getAnnotation(Column.class).type()) {
@@ -98,7 +83,6 @@ public class UserRepo {
                                     //System.out.print(" SERIAL");//checking
                                     break;
                                 default: //if no type is found...
-                                    //System.out.println(" INVALID");
                                     throw new InvalidFieldException("Invalid data type!");
                             }
 
@@ -113,57 +97,27 @@ public class UserRepo {
                             }
 
                             if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
-                                //primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
-                                //preparedStatement.append(" PRIMARY KEY");
                                 primaryKeyAssigned = true;
-                                //dropStatement.append(f.getAnnotation(Column.class).name());
                                 addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
                                     .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
                                     .append(")");
                                 //System.out.print(primaryKey);//checking
-
-                                //TODO make composite key
-                            } /*else if (f.isAnnotationPresent(Id.class) && primaryKeyAssigned) {
-                                throw new InvalidFieldException("Table cannot have more than one primary key!");
-                            }*/
-
-
-                            String sql = preparedStatement.toString();
-                            /*if(primaryKeyAssigned){
-                                System.out.println(dropStatement);
-                                sqlStatements.add(dropStatement.toString());
-                            }*/
-
-                            //System.out.println(sql);//Just to verify
-                            if(!sqlStatements.contains(sql)){
-                                sqlStatements.add(sql);//no duplicates allowed
                             }
 
-
-                            //primaryKeyAssigned = false;
+                            //TODO make composite key
+                            //TODO: restore this if non-unique entries become an issue.
+                            //if(!sqlStatements.contains(preparedStatement.toString())){
+                                sqlStatements.add(preparedStatement.toString());//no duplicates allowed
+                            //}
                         }
                     }//end for loop
 
                     //TODO Doesn't handle composite keys yet
-
-                    /*
-                        alter table user
-                        add constraint user_id_pk
-                        primary key (user_id);
-                     */
-
                     if (primaryKeyAssigned) {
                         sqlStatements.add(addPrimaryKey.toString());
                     } /*else {
                         throw new IllegalArgumentException("There is no primary key!");
                     }*/
-
-                    //preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    //preparedStatement.append(")");
-
-                    /*String sql = preparedStatement.toString();
-
-                    System.out.println(sql);//Just to verify*/
 
                     //TODO: figure out why duplicate statements exist in sqlStatements
                     //execute an sql statement for each column needing to be added
@@ -175,22 +129,12 @@ public class UserRepo {
                                 System.out.println(pstmt.toString());
                                 pstmt.executeUpdate();
                             }
-
-                            /*for (String sql : sqlStatements) {
-                                System.out.println(sql);
-                                PreparedStatement pstmt = conn.prepareStatement(sql);
-                                pstmt.executeUpdate();//table created; but if column already exists?
-                            }*/
                         } catch (SQLException e) {//a statement couldn't be executed
                             System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
                                     "  Finished adding/editing columns!");
                             //e.printStackTrace();
                         }
                     }
-
-                    //now apply primary key, if any
-
-
                 }//end if for checking if class has @Table
             }//end if for checking if class has @Entity
             else {
@@ -215,6 +159,7 @@ public class UserRepo {
 
                     StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ").append(tableName);
 
+                    //TODO remove the use of columnNodes
                     List<ColumnNode> columnNodes = new ArrayList<>();
 
                     for (Field f : clazz.getDeclaredFields()) {
@@ -230,7 +175,7 @@ public class UserRepo {
                     }
 
                     preparedStatement.append(" (");
-
+                    //TODO remove the use of columnNodes
                     for (int i = 0; i < columnNodes.size(); i++) {
                         preparedStatement.append(columnNodes.get(i).getName() + ", ");
 
