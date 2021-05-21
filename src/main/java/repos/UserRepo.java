@@ -55,7 +55,9 @@ public class UserRepo {
                     //check for columns the class has
                     List<ColumnNode> columnNodes = new ArrayList<>();
 
-                    //String primaryKey = "PRIMARY KEY (";
+                    StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                            .append(" add constraint ");
+
                     boolean primaryKeyAssigned = false;
 
                     LinkedList<String> sqlStatements = new LinkedList<>();
@@ -111,25 +113,25 @@ public class UserRepo {
 
                             if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
                                 //primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
-                                preparedStatement.append(" PRIMARY KEY");
+                                //preparedStatement.append(" PRIMARY KEY");
                                 primaryKeyAssigned = true;
-                                dropStatement.append(f.getAnnotation(Column.class).name());
+                                //dropStatement.append(f.getAnnotation(Column.class).name());
+                                addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
+                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
+                                    .append(")");
                                 //System.out.print(primaryKey);//checking
 
                                 //TODO make composite key
-                            } else if (f.isAnnotationPresent(Id.class) && primaryKeyAssigned) {
+                            } /*else if (f.isAnnotationPresent(Id.class) && primaryKeyAssigned) {
                                 throw new InvalidFieldException("Table cannot have more than one primary key!");
-                            }
+                            }*/
 
-                            //preparedStatement.append(" END");
-                            //preparedStatement.append(", ");
-                            //preparedStatement.append(")");
 
                             String sql = preparedStatement.toString();
-                            if(primaryKeyAssigned){
+                            /*if(primaryKeyAssigned){
                                 System.out.println(dropStatement);
                                 sqlStatements.add(dropStatement.toString());
-                            }
+                            }*/
 
                             //System.out.println(sql);//Just to verify
                             if(!sqlStatements.contains(sql)){
@@ -137,14 +139,21 @@ public class UserRepo {
                             }
 
 
-                            primaryKeyAssigned = false;
+                            //primaryKeyAssigned = false;
                         }
                     }//end for loop
 
                     //TODO Doesn't handle composite keys yet
-                    /*if (primaryKeyAssigned) {
-                        preparedStatement.append(primaryKey);
-                    } else {
+
+                    /*
+                        alter table user
+                        add constraint user_id_pk
+                        primary key (user_id);
+                     */
+
+                    if (primaryKeyAssigned) {
+                        sqlStatements.add(addPrimaryKey.toString());
+                    } /*else {
                         throw new IllegalArgumentException("There is no primary key!");
                     }*/
 
@@ -171,8 +180,10 @@ public class UserRepo {
                                 PreparedStatement pstmt = conn.prepareStatement(sql);
                                 pstmt.executeUpdate();//table created; but if column already exists?
                             }*/
-                        } catch (SQLException e) {
-                            e.printStackTrace();
+                        } catch (SQLException e) {//a statement couldn't be executed
+                            System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
+                                    "  Finished adding/editing columns!");
+                            //e.printStackTrace();
                         }
                     }
 
