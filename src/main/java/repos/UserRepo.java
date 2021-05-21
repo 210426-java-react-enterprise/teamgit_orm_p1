@@ -58,115 +58,84 @@ public class UserRepo {
                     //String primaryKey = "PRIMARY KEY (";
                     boolean primaryKeyAssigned = false;
 
-                    //TODO: fix this
-                    //CHECK FOR COLUMNS
-                    ResultSet queryResult = null;
-                    //WHY DOESN'T THIS FRIGGIN' THING WORK!!!!!!!!!
-                    try {
-                        String queryColumns = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = " + tableName;
-                        System.out.println(queryColumns);
-                        PreparedStatement pstmt = conn.prepareStatement(queryColumns);
-                        queryResult = pstmt.executeQuery();//if this throws an error, then no columns exist
-                    } catch(PSQLException e){
-                        System.out.println("This exception can burn in hell:");
-                        e.printStackTrace();
-                    }catch(SQLException e){
-                        e.printStackTrace();
-                    }
-
                     LinkedList<String> sqlStatements = new LinkedList<>();
-
 
                     for (Field f : clazz.getDeclaredFields()) {
                         if (f.isAnnotationPresent(Column.class)) {
                             Column column = f.getAnnotation(Column.class);
-                            boolean columnExists = false;
 
-                            StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName).append(" ");
-                            //TODO:check if column already exists!
-                            if(queryResult != null) {//if not null, then there are columns, thus some/all shouldn't be added
-                                try {
-                                    String columnName = queryResult.getString(column.name());
-                                    System.out.println("Comparing this column from query: " + columnName);
-                                    System.out.println("To this column from reflection: " + column.name());
-                                    if (columnName.equals(column.name())) {
-                                        System.out.println("Column exists!");
-                                        columnExists = true;
-                                        continue;//go to next iteration of for loop, checking next column
-                                    }
-                                } catch (SQLException e) {
-                                    System.out.println("Column doesn't exist.  Creating it...");
-                                    columnExists = false;
-                                    //e.printStackTrace();
-                                }
-                            }
+                            StringBuilder dropStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                                    .append(" DROP COLUMN IF EXISTS ");
+                            StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                                    .append(" ADD COLUMN IF NOT EXISTS ");
 
-                            if(!columnExists) {
-                                columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
-                                System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
-                                preparedStatement.append("ADD COLUMN ");
-                                preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
 
-                                if (f.getAnnotation(Column.class).type().equals("varchar")) {
+                            columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
+                            //System.out.printf("Added column %s\n", f.getAnnotation(Column.class).name());//checking
+                            preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+
+                            switch (f.getAnnotation(Column.class).type()) {
+                                case "varchar":
                                     preparedStatement.append(" VARCHAR(");
                                     preparedStatement.append(f.getAnnotation(Column.class).length());
                                     preparedStatement.append(")");
                                     //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
-                                } else if (f.getAnnotation(Column.class).type().equals("date")) {
+                                    break;
+                                case "date":
                                     preparedStatement.append(" DATE");
                                     //System.out.print(" DATE");//checking
-                                } else if (f.getAnnotation(Column.class).type().equals("double")) {
+                                    break;
+                                case "double":
                                     preparedStatement.append(" DOUBLE(");
                                     preparedStatement.append(f.getAnnotation(Column.class).length());
                                     preparedStatement.append(")");
-                                } else if (f.getAnnotation(Column.class).type().equals("serial")) {
+                                    break;
+                                case "serial":
                                     preparedStatement.append(" SERIAL");
                                     //System.out.print(" SERIAL");//checking
-                                } else {//if no type is found...
+                                    break;
+                                default: //if no type is found...
                                     //System.out.println(" INVALID");
                                     throw new InvalidFieldException("Invalid data type!");
-                                }
-
-                                if (!f.getAnnotation(Column.class).nullable()) {
-                                    preparedStatement.append(" not null");
-                                    //System.out.print(" not null");//checking
-                                }
-
-                                if (f.getAnnotation(Column.class).unique()) {
-                                    preparedStatement.append(" unique");
-                                    //System.out.print(" unique");//checking
-                                }
-
-                                if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
-                                    //primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
-                                    preparedStatement.append(" PRIMARY KEY");
-                                    primaryKeyAssigned = true;
-                                    //System.out.print(primaryKey);//checking
-
-                                    //TODO make composite key
-                                } else if (f.isAnnotationPresent(Id.class) && primaryKeyAssigned) {
-                                    throw new InvalidFieldException("Table cannot have more than one primary key!");
-                                }
-
-                                //preparedStatement.append(" END");
-                                //preparedStatement.append(", ");
-                                //preparedStatement.append(")");
-
-                                String sql = preparedStatement.toString();
-
-                                System.out.println(sql);//Just to verify
-
-                                sqlStatements.add(sql);
-
-                                /*try {
-                                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                                    pstmt.executeUpdate();//table created; but if column already exists?
-                                } catch (SQLException e) {
-                                    e.printStackTrace();
-                                }*/
                             }
 
-                            //System.out.println(",");//checking
+                            if (!f.getAnnotation(Column.class).nullable()) {
+                                preparedStatement.append(" not null");
+                                //System.out.print(" not null");//checking
+                            }
+
+                            if (f.getAnnotation(Column.class).unique()) {
+                                preparedStatement.append(" unique");
+                                //System.out.print(" unique");//checking
+                            }
+
+                            if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
+                                //primaryKey = primaryKey + f.getAnnotation(Column.class).name() + ")";
+                                preparedStatement.append(" PRIMARY KEY");
+                                primaryKeyAssigned = true;
+                                dropStatement.append(f.getAnnotation(Column.class).name());
+                                //System.out.print(primaryKey);//checking
+
+                                //TODO make composite key
+                            } else if (f.isAnnotationPresent(Id.class) && primaryKeyAssigned) {
+                                throw new InvalidFieldException("Table cannot have more than one primary key!");
+                            }
+
+                            //preparedStatement.append(" END");
+                            //preparedStatement.append(", ");
+                            //preparedStatement.append(")");
+
+                            String sql = preparedStatement.toString();
+                            if(primaryKeyAssigned){
+                                System.out.println(dropStatement);
+                                sqlStatements.add(dropStatement.toString());
+                            }
+
+                            //System.out.println(sql);//Just to verify
+
+                            sqlStatements.add(sql);
+
+                            primaryKeyAssigned = false;
                         }
                     }//end for loop
 
@@ -184,15 +153,36 @@ public class UserRepo {
 
                     System.out.println(sql);//Just to verify*/
 
+                    //TODO: find out why duplicates exist
+                    //remove any duplicates that exist
+                    Collections.sort(sqlStatements);
+                    int size = sqlStatements.size();
+                    for(int i = 0; i < size; i++){
+                        if(i+1 < size) {
+                            if (sqlStatements.get(i).equals(sqlStatements.get(i + 1))) {
+                                sqlStatements.remove(i);
+                                size--;
+                                //i--;//because size is reduced by 1
+                            }
+                        }
+                    }
+
                     //execute an sql statement for each column needing to be added
                     //TODO: make sure this is not commented out when pushed
                     if(sqlStatements.size() > 0) {//must be at least 1 column to add
                         try {
-                            for (String sql : sqlStatements) {
+                            //reverse order so that DROP COLUMN statements are executed first.
+                            for(int i = sqlStatements.size()-1; i >= 0; i--){
+                                PreparedStatement pstmt = conn.prepareStatement(sqlStatements.get(i));
+                                System.out.println(pstmt.toString());
+                                pstmt.executeUpdate();
+                            }
+
+                            /*for (String sql : sqlStatements) {
                                 System.out.println(sql);
                                 PreparedStatement pstmt = conn.prepareStatement(sql);
                                 pstmt.executeUpdate();//table created; but if column already exists?
-                            }
+                            }*/
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
