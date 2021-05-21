@@ -27,11 +27,19 @@ public class Driver {
 
         //AppUser contains @Connection with application properties injected
 
-        AppUser appUser = new AppUser("swekevin", "password!", "kevin.chang@revature.net", "Kevin", "Chang", "1998-12-20");
-        System.out.println("+-----------------+");
-        userRepo.execute(appUser);
-        System.out.println("+-----------------+");
+       // AppUser appUser = new AppUser("swekevin", "password!", "kevin.chang@revature.net", "Kevin", "Chang", "1998-12-20");
+//        System.out.println("+-----------------+");
+//        userRepo.execute(appUser);
+//        System.out.println("+-----------------+");
+        AppUser appUser2 = new AppUser();
 
+
+        appUser2.setUsername("swekevin");
+        appUser2.setPassword("password");
+
+        AppUser o = (AppUser) userRepo.select(appUser2);
+
+        System.out.println(o.toString());
         //users data: PK user_id, username, password, firstname, lastname, email, dob
         //accounts: PK account_id, FK user_id, balance
         //transactions: FK account_id, transaction_id, date/time, previous_balance, change (deposit + or withdrawal -)

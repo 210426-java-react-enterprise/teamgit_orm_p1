@@ -43,10 +43,6 @@ public class AppUser {
     private String dob;
 
 
-    public AppUser() {
-        super();
-    }
-
     /**
      * Assembles the present values of the params to assemble an AppUser object to be more easily passed around
      * Values for the params will be harvested at registration.
@@ -58,11 +54,16 @@ public class AppUser {
      * @param dob String
      */
 
+    @Constructor(name = "users", type = "noargs")
+    public AppUser(){
+        this.id = 0;
+    }
 
     //dob should be YYYY-MM-DD format, regex
     @Constructor(name = "users")
     public AppUser(String username, String password, String email, String firstName, String lastName, String dob) {
         System.out.println("Registering user...");
+        this.id = 0;
         this.username = username;
         this.password = password;
         this.email = email;
@@ -138,5 +139,18 @@ public class AppUser {
     @Setter(name = "dob")
     public void setDob(String dob) {
         this.dob = dob;
+    }
+
+    @Override
+    public String toString() {
+        return "AppUser{" +
+                "id='" + id + '\'' +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", email='" + email + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", dob='" + dob + '\'' +
+                '}';
     }
 }
