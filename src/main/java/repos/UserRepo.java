@@ -2,9 +2,10 @@ package repos;
 
 import models.AppUser;
 
+import java.lang.reflect.*;
 import java.util.List;
 import annotations.*;
-import java.lang.reflect.Field;
+
 import java.util.ArrayList;
 import java.util.List;
 import util.ConnectionFactory;
@@ -204,15 +205,23 @@ public class UserRepo {
                         Field[] fields = clazz.getDeclaredFields();
                         //We start at i = 1, because sql is indexed at 1, and because field[0] is id
                         for (int i = 1; i <= columnNodes.size(); i++) {
-                            if (fields[i].isAnnotationPresent(annotations.Date.class)) {
+                            String type = fields[i].getAnnotation(Column.class).type();
+                            if (type.equals("date")) {
                                 fields[i].setAccessible(true);
                                 System.out.println(fields[i].get(o));
                                 pstmt.setDate(i, java.sql.Date.valueOf(String.valueOf(fields[i].get(o))));
                                 fields[i].setAccessible(false);
-                            } else {
+                            }
+                            else if(type.equals("varchar")) {
                                 fields[i].setAccessible(true);
                                 System.out.println(fields[i].get(o));
                                 pstmt.setString(i, String.valueOf(fields[i].get(o)));
+                                fields[i].setAccessible(false);
+                            }
+                            else if(type.equals("int")) {
+                                fields[i].setAccessible(true);
+                                System.out.println(fields[i].get(o));
+                                pstmt.setInt(i, Integer.valueOf(String.valueOf(fields[i].get(o))));
                                 fields[i].setAccessible(false);
                             }
                         }
@@ -274,8 +283,8 @@ public class UserRepo {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     System.out.println("Marker 3");
                     Table table = clazz.getAnnotation(Table.class);
-                    String tablename = table.name();//if tableName.name == "users"
-                    String sql = ("CREATE TABLE IF NOT EXISTS " + tablename + "()");
+                    String tableName = table.name();//if tableName.name == "users"
+                    String sql = ("CREATE TABLE IF NOT EXISTS " + tableName + "()");
                     Statement stmt = conn.createStatement();
                     stmt.execute(sql);
                     buildTable(o, conn);
@@ -289,8 +298,130 @@ public class UserRepo {
         }
     }
 
+    /**
+     * @author Chris Levano
+     * @author Kevin Chang
+     */
+    //TODO implement a SELECT method
+    public Object select(Object o){
+        Class<?> clazz = o.getClass();
+        try(Connection conn = ConnectionFactory.getInstance().getConnection(o)){
+            if(clazz.isAnnotationPresent((Entity.class))){
+                if (clazz.isAnnotationPresent(Table.class)){
+                    String tableName = clazz.getAnnotation(Table.class).name();
+                    StringBuilder select = new StringBuilder("SELECT * FROM " + tableName + " WHERE ");
+                    Field[] fields = clazz.getDeclaredFields();
+                    for (Field field: fields) {
+                        field.setAccessible(true);
+                        Object fieldVal = field.get(o);
+                        field.setAccessible(false);
+                        if (field.getAnnotation(Column.class).type().equals("varchar")) {
+                            if (fieldVal != null) {
+                                String columnName = field.getAnnotation(Column.class).name();
+                                select.append(columnName + " = ? AND ");
+                            }
+                        } else if (field.getAnnotation(Column.class).type().equals("date")) {
+                            if (fieldVal != null) {
+                                String columnName = field.getAnnotation(Column.class).name();
+                                select.append(columnName + " = ? AND ");
+                            }
+                        } else if (field.getAnnotation(Column.class).type().equals("serial")) {
+                            if (Integer.parseInt(String.valueOf(fieldVal)) != 0) {
+                                String columnName = field.getAnnotation(Column.class).name();
+                                select.append(columnName + " = ? AND ");
+                            }
+                        } else if (field.getAnnotation(Column.class).type().equals("double")) {
+                            if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
+                                String columnName = field.getAnnotation(Column.class).name();
+                                select.append(columnName + " = ? AND ");
+                            }
+                        }
+                    }
+                    select.deleteCharAt(select.lastIndexOf("A"));
+                    select.deleteCharAt(select.lastIndexOf("N"));
+                    select.deleteCharAt(select.lastIndexOf("D"));
 
-  
+                    PreparedStatement pstmt = conn.prepareStatement(select.toString());
+
+                    int pstmtCount = 1;
+                    for (int i = 0; i < fields.length; i++) {
+                        fields[i].setAccessible(true);
+                        Object currentFieldVal = fields[i].get(o);
+                        fields[i].setAccessible(false);
+                        String type = fields[i].getAnnotation(Column.class).type();
+
+                        if (type.equals("date")) {
+                            if (currentFieldVal != null) {
+                                fields[i].setAccessible(true);
+                                pstmt.setDate(pstmtCount, java.sql.Date.valueOf(String.valueOf(currentFieldVal)));
+                                pstmtCount++;
+                            }
+                        }
+                        else if (type.equals("varchar")) {
+                            if (currentFieldVal != null) {
+                                //System.out.println(fields[i].get(o));
+                                pstmt.setString(pstmtCount, String.valueOf(currentFieldVal));
+                                pstmtCount++;
+                            }
+                        } else if (type.equals("int")) {
+                            if (Integer.parseInt(String.valueOf(currentFieldVal)) != 0) {
+                                //System.out.println(fields[i].get(o));
+                                pstmt.setInt(pstmtCount, Integer.parseInt(String.valueOf(currentFieldVal)));
+                                pstmtCount++;
+                            }
+                        }
+                    }
+                    ResultSet rs = pstmt.executeQuery();
+                    while (rs.next()){
+                        //TODO Constructor to mirror Object, our Setter methods are currently being sent to nowhere
+                        Method[] methods = clazz.getDeclaredMethods();
+                        for (int i = 0; i <methods.length; i++) {
+                            if(methods[i].isAnnotationPresent(Setter.class)){
+                                String methodName = methods[i].getAnnotation(Setter.class).name();
+                                    for (Field field : fields) {
+                                        String columnName = field.getAnnotation(Column.class).name();
+                                        if(methodName == columnName){
+                                            String type = field.getAnnotation(Column.class).type();
+                                            switch(type) {
+                                                case "varchar":
+                                                    methods[i].setAccessible(true);
+                                                    methods[i].invoke(rs.getString(columnName), String.class);
+                                                    methods[i].setAccessible(false);
+                                                    break;
+                                                case "date":
+                                                    methods[i].setAccessible(true);
+                                                    methods[i].invoke(String.valueOf(rs.getDate(columnName)), String.class);
+                                                    methods[i].setAccessible(false);
+                                                    break;
+                                                case "double":
+                                                    methods[i].setAccessible(true);
+                                                    methods[i].invoke(rs.getDouble(columnName), Double.class);
+                                                    methods[i].setAccessible(false);
+                                                    break;
+                                                case "int":
+                                                    methods[i].setAccessible(true);
+                                                    methods[i].invoke(rs.getInt(columnName), Integer.class);
+                                                    methods[i].setAccessible(false);
+                                                    break;
+                                                default:
+                                            }
+
+                                        }
+                                    }
+                            }
+
+                        }
+                    }
+                }
+            }
+        } catch (SQLException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        //TODO FIX RETURN TYPE
+        return o;
+    }
+
+    //TODO if at all
     public Object findUserByUsernameAndPassword(Object o){
         Object result = null;
         //reflect object
@@ -313,13 +444,17 @@ public class UserRepo {
   
 
     //TODO pending implementation
-    public boolean isEmailAvailable(String email){
+    public boolean isEmailAvailable(Object o){
+        //you can still assume you're looking email, because it's embedded in theo bject
+        //you need reflection to get the column names and run queries
         return false;
     }
   
   
     //TODO pending implementation
-    public boolean isUsernameAvailable(String username){
+    public boolean isUsernameAvailable(Object o){
+        //you can still assume you're looking email, because it's embedded in theo bject
+        //you need reflection to get the column names and run queries
         return false;
     }
 }
