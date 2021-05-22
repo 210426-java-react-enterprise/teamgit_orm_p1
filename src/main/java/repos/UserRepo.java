@@ -146,48 +146,76 @@ public class UserRepo {
 
    
 
-  
-  public void save(Object o, Connection conn) {
+    /*
+    INSERT INTO table_name (column1, column2, column3, ...)
+    VALUES (value1, value2, value3, ...);
+     */
 
-            Class<?> clazz = o.getClass();
+    //TODO: Thomas needs to work on this
+    //TODO: verification that table, and columns, already exist?
+    //rename from save() to insert()
+    //build a query that genetically queries the objects fields
+    //just edit this
+  public void insert(Object o, Connection conn) {
+
+            Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
 
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
-                if (clazz.isAnnotationPresent(Table.class)) {
+                if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
                     Table table = clazz.getAnnotation(Table.class);
                     String tableName = table.name();//if tableName.name == "users"
                     System.out.println(tableName);
 
-                    StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ").append(tableName);
+                    StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
+                            .append(tableName).append(" (");
 
                     //TODO remove the use of columnNodes
-                    List<ColumnNode> columnNodes = new ArrayList<>();
+                    //List<ColumnNode> columnNodes = new ArrayList<>();
 
+                    //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
+                    //values (username, password, email, firstName, lastName, dob)
+                    LinkedList<String> columnsUsed = new LinkedList<>();//holds column names
+                    //LinkedList<String> columnData = new LinkedList<>();//holds each value to be inserted into the row for each column
                     for (Field f : clazz.getDeclaredFields()) {
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
-                            if (!f.isAnnotationPresent(Id.class)) {
-                                System.out.println(column.name() + " " + column.nullable() + " " + column.unique());
-                                columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
-                                //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
-                                //values (username, password, email, firstName, lastName, dob)
+                            if (!f.isAnnotationPresent(Id.class)) {//because this is serial and automated
+                                //System.out.println(column.name() + " " + column.nullable() + " " + column.unique());
+                                //columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
+
+                                //add column name to list
+                                columnsUsed.add(f.getAnnotation(Column.class).name());
+
+                                //this will be more difficult than you think
+                                //columnData.add();
+
                             }
                         }
                     }
 
-                    preparedStatement.append(" (");
+                    //preparedStatement.append(" (");
                     //TODO remove the use of columnNodes
-                    for (int i = 0; i < columnNodes.size(); i++) {
-                        preparedStatement.append(columnNodes.get(i).getName() + ", ");
+                    /*for (int i = 0; i < columnsUsed.size(); i++) {
+                        preparedStatement.append(columnsUsed.get(i) + ", ");
 
+                    }*/
+
+                    for(String col : columnsUsed){
+                        preparedStatement.append(col + ", ");
                     }
 
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
                     preparedStatement.append(") VALUES (");
 
 
-                    for (int i = 0; i < columnNodes.size(); i++) {
+                    /*for (int i = 0; i < columnNodes.size(); i++) {
+                        preparedStatement.append("?, ");
+                    }*/
+
+                    for (int i = 0; i < columnsUsed.size(); i++) {
                         preparedStatement.append("?, ");
                     }
+
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
                     preparedStatement.append(")");
 
@@ -199,7 +227,8 @@ public class UserRepo {
 
                         Field[] fields = clazz.getDeclaredFields();
                         //We start at i = 1, because sql is indexed at 1, and because field[0] is id
-                        for (int i = 1; i <= columnNodes.size(); i++) {
+                        //for (int i = 1; i <= columnNodes.size(); i++) {
+                        for (int i = 1; i <= columnsUsed.size(); i++) {
                             String type = fields[i].getAnnotation(Column.class).type();
                             if (type.equals("date")) {
                                 fields[i].setAccessible(true);
@@ -221,7 +250,7 @@ public class UserRepo {
                             }
                         }
 
-
+                        System.out.println("Executing this statement:\n" + pstmt.toString());
                         int rowsInserted = pstmt.executeUpdate();
 
                         //from some AppUser instance passed into here from elsewhere, we construct an accounts table
@@ -280,7 +309,7 @@ public class UserRepo {
                     Statement stmt = conn.createStatement();
                     stmt.execute(sql);
                     addColumns(o, conn);
-
+                    insert(o, conn);//added by Thomas; in case new object has data needing inserted
                 }
             }
         } catch (SQLException throwables) {
@@ -455,5 +484,12 @@ public class UserRepo {
         //you need reflection to get the column names and run queries
         return false;
     }
+
+
+    //TODO: implement this, update
+    public void update(){
+
+    }
+
 }
 
