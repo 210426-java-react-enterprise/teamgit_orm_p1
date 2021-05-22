@@ -21,26 +21,26 @@ import java.time.LocalDate;
 public class AppUser {
 
     @Id(name = "user_id") //Specifies Primary Key of entity
-    @Column(name = "user_id", nullable = false, unique = true, type = "serial")
+    @Column(name = "user_id", nullable = false, unique = true, type = "serial", updateable = false)
     private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
 
-    @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20")
+    @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20", updateable = false)
     private String username;
 
-    @Column(name = "password", nullable = false, unique = false, type = "varchar", length = "255")
+    @Column(name = "password", nullable = false, unique = false, type = "varchar", length = "255", updateable = true)
     private String password;
 
-    @Column(name = "email", nullable = false, unique = true, type = "varchar", length = "255")
+    @Column(name = "email", nullable = false, unique = true, type = "varchar", length = "255", updateable = false)
     private String email;
 
-    @Column(name = "first_name", nullable = false, unique = false, type = "varchar", length = "25")
+    @Column(name = "first_name", nullable = false, unique = false, type = "varchar", length = "25", updateable = true)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, unique = false, type = "varchar", length = "25")
+    @Column(name = "last_name", nullable = false, unique = false, type = "varchar", length = "25", updateable = true)
     private String lastName;
 
-    @Date
-    @Column(name = "dob", nullable = false, unique = false, type = "date")
+
+    @Column(name = "dob", nullable = false, unique = false, type = "date", updateable = false)
     private String dob;
 
     @Constructor(name = "users", type = "noargs")

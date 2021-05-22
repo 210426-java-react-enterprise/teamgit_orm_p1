@@ -23,7 +23,7 @@ import static models.AppUser.getId;
  * @author Chris
  */
 public class AccountRepo {
-    public static void deposit(Object o, Object acc) {
+    public static void update(Object o, Object acc) {
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
             Class<?> clazz = acc.getClass();
             Class<?> user = o.getClass();
@@ -71,59 +71,6 @@ public class AccountRepo {
             }
 
 
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-    }
-
-        public static void withdraw(Object o, Object acc) {
-        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
-
-            Class<?> clazz = acc.getClass();
-            Class<?> user = o.getClass();
-
-            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
-                if (clazz.isAnnotationPresent(Table.class)) {
-                    Table table = clazz.getAnnotation(Table.class);
-                    String tableName = table.name();
-                    StringBuilder preparedStatement = new StringBuilder().append("UPDATE ").append(tableName);
-
-                    String bal = null;
-                    Field[] fields = clazz.getDeclaredFields();
-                    for (Field f : fields) {
-                        Column column = f.getAnnotation(Column.class);
-                        if (column != null) {
-                            if (f.getAnnotation(Column.class).name().equals("balance")) {
-                                bal = f.getAnnotation(Column.class).name();
-                            }
-                        }
-                    }
-                    String uid = null;
-                    int user_num;
-                    Field[] userFields = user.getDeclaredFields();
-                    for (Field uf : userFields) {
-                        Id column = uf.getAnnotation(Id.class);
-                        if (column != null) {
-                            if (uf.getAnnotation(Id.class).name().equals("user_id")) {
-                                uid = uf.getAnnotation(Id.class).name();
-                            }
-                        }
-                    }
-                    preparedStatement.append(" SET ").append(bal).append(" = ").append(bal).append(" - ").append(TransactionValues.getWithdrawal());
-                    preparedStatement.append(" WHERE ").append(uid).append(" = ").append(AppUser.getId());
-                    System.out.println(AppUser.getId());
-
-                    String sql = preparedStatement.toString();
-                    try {
-                        PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
-
-                        pstmt.executeUpdate();
-                        System.out.println("Check the database!");
-                    } catch (SQLException throwables) {
-                        throwables.printStackTrace();
-                    }
-                }//end if
-            }//end if
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }

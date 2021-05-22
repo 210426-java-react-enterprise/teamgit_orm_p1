@@ -4,8 +4,10 @@ import java.lang.reflect.*;
 import java.util.List;
 import annotations.*;
 import java.util.ArrayList;
+
+import models.*;
 import util.ConnectionFactory;
-import models.ColumnNode;
+
 import java.sql.Connection;
 import java.util.*;
 import java.sql.*;
@@ -18,7 +20,70 @@ import exceptions.*;
  * @author Thomas Diendorf
  * @author Chris Levano
  */
-public class UserRepo {
+public class Repo {
+
+    /**
+     * @author Chris Levano
+     * @author Kevin Chang
+     */
+    public static void update(Object o) {
+        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+            Class<?> clazz = o.getClass();
+
+            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
+                if (clazz.isAnnotationPresent(Table.class)) {
+                    Table table = clazz.getAnnotation(Table.class);
+                    String tableName = table.name();
+                    StringBuilder preparedStatement = new StringBuilder().append("UPDATE ").append(tableName);
+
+                    preparedStatement.append(" SET ");
+                    Field[] fields = clazz.getDeclaredFields();
+                    for (Field f : fields) {
+                        Column column = f.getAnnotation(Column.class);
+                        if (column != null) {
+                            if (f.getAnnotation(Column.class).updateable()) {
+                                preparedStatement.append(f.getAnnotation(Column.class).name());
+                                preparedStatement.append(" = ? ");
+                                preparedStatement.append(" , ");
+                            }
+                        }
+                    }
+
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+
+                    PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString());
+                    //TODO we stopped here
+
+                    String uid = null;
+                    int user_num;
+                    Field[] userFields = user.getDeclaredFields();
+                    for (Field uf : userFields) {
+                        Id column = uf.getAnnotation(Id.class);
+                        if (column != null) {
+                            if (uf.getAnnotation(Id.class).name().equals("user_id")) {
+                                uid = uf.getAnnotation(Id.class).name();
+                            }
+                        }//Set bal = bal + deposit
+                        preparedStatement.append(" WHERE ").append(uid).append(" = ").append(AppUser.getId());
+
+                        String sql = preparedStatement.toString();
+                        try {
+                            PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
+
+                            pstmt.executeUpdate();
+                            System.out.println("Check the database!");
+                        } catch (SQLException throwables) {
+                            throwables.printStackTrace();
+                        }
+                    }//end if
+                }//end if
+            }
+
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
 
     /*
     CREATE TABLE users (
@@ -77,10 +142,16 @@ public class UserRepo {
                                     preparedStatement.append(" DOUBLE(");
                                     preparedStatement.append(f.getAnnotation(Column.class).length());
                                     preparedStatement.append(")");
+                                    preparedStatement.append(" DEFAULT 0.00");
+
                                     break;
                                 case "serial":
                                     preparedStatement.append(" SERIAL");
                                     //System.out.print(" SERIAL");//checking
+                                    break;
+                                case "int":
+                                    preparedStatement.append(" INTEGER");
+                                    preparedStatement.append(" DEFAULT 0");
                                     break;
                                 default: //if no type is found...
                                     throw new InvalidFieldException("Invalid data type!");
@@ -293,7 +364,7 @@ public class UserRepo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-    //TODO implement a SELECT method
+
     public Object select(Object o){
         Class<?> clazz = o.getClass();
         //This will serve as the return object, returns null if proper algorithm does not execute
@@ -419,41 +490,46 @@ public class UserRepo {
         return returnObject;
     }
 
-    //TODO if at all
-    public Object findUserByUsernameAndPassword(Object o){
-        Object result = null;
-        //reflect object
 
-        //get fields username and password
 
-        //check with db, if doesn't exist, return null
 
-        //if does exist:
-
-        //get all fields of object
-        //extract constructor and get a .newInstance()
-        //use reflection to get all the setters of the constructor and set values with the
-        //field values from database (rs.getString("column_label"))
-            //note: make sure you have an if statement that controls .getString or .getInt or .getDate depending on constructor parameters
-            //you can read what parameters a given constructor takes using Class[] parameterTypes = constructor.getParameterTypes();
-
-        return result;
-    }
+//    //TODO if at all
+//    public Object findUserByUsernameAndPassword(Object o){
+//        Object result = null;
+//        //reflect object
+//
+//        //get fields username and password
+//
+//        //check with db, if doesn't exist, return null
+//
+//        //if does exist:
+//
+//        //get all fields of object
+//        //extract constructor and get a .newInstance()
+//        //use reflection to get all the setters of the constructor and set values with the
+//        //field values from database (rs.getString("column_label"))
+//            //note: make sure you have an if statement that controls .getString or .getInt or .getDate depending on constructor parameters
+//            //you can read what parameters a given constructor takes using Class[] parameterTypes = constructor.getParameterTypes();
+//
+//        return result;
+//    }
   
 
-    //TODO pending implementation
-    public boolean isEmailAvailable(Object o){
-        //you can still assume you're looking email, because it's embedded in theo bject
-        //you need reflection to get the column names and run queries
-        return false;
-    }
-  
-  
-    //TODO pending implementation
-    public boolean isUsernameAvailable(Object o){
-        //you can still assume you're looking email, because it's embedded in theo bject
-        //you need reflection to get the column names and run queries
-        return false;
-    }
+
+
+//    //TODO pending implementation
+//    public boolean isEmailAvailable(Object o){
+//        //you can still assume you're looking email, because it's embedded in theo bject
+//        //you need reflection to get the column names and run queries
+//        return false;
+//    }
+//
+//
+//    //TODO pending implementation
+//    public boolean isUsernameAvailable(Object o){
+//        //you can still assume you're looking email, because it's embedded in theo bject
+//        //you need reflection to get the column names and run queries
+//        return false;
+//    }
 }
 
