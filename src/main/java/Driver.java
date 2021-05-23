@@ -1,29 +1,15 @@
-import annotations.Column;
-import annotations.Entity;
 import models.AppUser;
 import repos.*;
-import models.TransactionValues;
-import models.UserAccount;
 
 
-import java.io.File;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.*;
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.sql.*;
 
 public class Driver {
 
 
     public static void main(String[] args) throws MalformedURLException, ClassNotFoundException {
 
-        UserRepo userRepo = new UserRepo();
+        Repo repo = new Repo();
 
         //AppUser contains @Connection with application properties injected
 
@@ -32,14 +18,10 @@ public class Driver {
 //        userRepo.execute(appUser);
 //        System.out.println("+-----------------+");
         AppUser appUser2 = new AppUser();
+        AppUser a = new AppUser();
 
+        repo.create(a);
 
-        appUser2.setUsername("swekevin");
-        appUser2.setPassword("password");
-
-        AppUser o = (AppUser) userRepo.select(appUser2);
-
-        System.out.println(o.toString());
         //users data: PK user_id, username, password, firstname, lastname, email, dob
         //accounts: PK account_id, FK user_id, balance
         //transactions: FK account_id, transaction_id, date/time, previous_balance, change (deposit + or withdrawal -)

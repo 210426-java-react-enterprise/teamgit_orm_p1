@@ -14,45 +14,35 @@ import java.time.LocalDate;
 
 @Entity()
 @Connection(url = "jdbc:postgresql://database-swekevin.cwvfowetr0c7.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=project1",
+            //url = "jdbc:postgresql://project0-accounts.comfkmj3hfze.us-west-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
+            //username = "thomas",
             username = "postgres",
             password = "revature")
-@Table(name = "users")
+@Table(name = "test_users")
 public class AppUser {
 
     @Id(name = "user_id") //Specifies Primary Key of entity
-    @Column(name = "user_id", nullable = false, unique = true, type = "serial")
+    @Column(name = "user_id", nullable = false, unique = true, type = "serial", updateable = false)
     private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
 
-    @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20")
+    @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20", updateable = false)
     private String username;
 
-    @Column(name = "password", nullable = false, unique = false, type = "varchar", length = "255")
+    @Column(name = "password", nullable = false, unique = false, type = "varchar", length = "255", updateable = true)
     private String password;
 
-    @Column(name = "email", nullable = false, unique = true, type = "varchar", length = "255")
+    @Column(name = "email", nullable = false, unique = true, type = "varchar", length = "255", updateable = false)
     private String email;
 
-    @Column(name = "first_name", nullable = false, unique = false, type = "varchar", length = "25")
+    @Column(name = "first_name", nullable = false, unique = false, type = "varchar", length = "25", updateable = true)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, unique = false, type = "varchar", length = "25")
+    @Column(name = "last_name", nullable = false, unique = false, type = "varchar", length = "25", updateable = true)
     private String lastName;
 
-    @Date
-    @Column(name = "dob", nullable = false, unique = false, type = "date")
+
+    @Column(name = "dob", nullable = false, unique = false, type = "date", updateable = false)
     private String dob;
-
-
-    /**
-     * Assembles the present values of the params to assemble an AppUser object to be more easily passed around
-     * Values for the params will be harvested at registration.
-     * @param username String
-     * @param password String
-     * @param email String
-     * @param firstName String
-     * @param lastName String
-     * @param dob String
-     */
 
     @Constructor(name = "users", type = "noargs")
     public AppUser(){
