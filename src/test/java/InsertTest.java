@@ -2,6 +2,9 @@ import models.AppUser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import repos.Repo;
+
 import util.ConnectionFactory;
 
 import java.sql.Connection;
@@ -18,7 +21,7 @@ public class InsertTest {
 
     @Before
     public void setupTest(){
-        userRepo = new UserRepo();
+        repo = new Repo();
         appUser = new AppUser("tester2", "password", "test2@revature.net",
                 "test", "person", "1990-01-01");
 
@@ -38,7 +41,7 @@ public class InsertTest {
     @After
     public void tearDownTest(){
 
-        userRepo = null;
+        repo = null;
         appUser = null;
         conn = null;
         /*mockConn = null;
@@ -47,8 +50,11 @@ public class InsertTest {
 
     @Test
     public void insertValuesTest(){
-        userRepo.insert(appUser, conn);
-        userRepo.delete(appUser, conn);
+        repo.insert(appUser, conn);
+        repo.delete(appUser, conn);
+
+        //delete all rows with dob with a certain year/date and younger?
+
         //userRepo.create(mockAppUser);
         //userRepo.insert(mockAppUser, mockConn);
     }
