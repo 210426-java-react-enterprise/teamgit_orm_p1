@@ -121,7 +121,6 @@ public class Repo {
                         throw new IllegalArgumentException("There is no primary key!");
                     }*/
 
-
                     //execute an sql statement for each column needing to be added
                     if(sqlStatements.size() > 0) {//must be at least 1 column to add
                         try {
