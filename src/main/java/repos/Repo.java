@@ -154,16 +154,14 @@ public class Repo {
                             //System.out.print(" unique");//checking
                         }
 
-                        //TODO haven't verified if this prints correct foreign key values
+                        //handles foreign keys
                         if (f.isAnnotationPresent(ForeignKey.class)) {
                             preparedStatement.append(" foreign key references"
                                     + f.getAnnotation(ForeignKey.class).references()
                                     + "("
                                     + f.getAnnotation(ForeignKey.class).name()
-                                    + ") ");
-                            addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
-                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
-                                    .append(")");
+                                    + ") "
+                                    + "on delete cascade");
                         }
 
                         //TODO make composite key, put it before Id.class check, and set primaryKeyAssigned to true
@@ -177,21 +175,17 @@ public class Repo {
                             //System.out.print(primaryKey);//checking
                         }
 
-                        //TODO: restore this if non-unique entries become an issue.
-                        //if(!sqlStatements.contains(preparedStatement.toString())){
+
                         sqlStatements.add(preparedStatement.toString());//no duplicates allowed
-                        //}
                     }
                 }//end for loop
 
-                //TODO Doesn't handle composite keys yet
                 if (primaryKeyAssigned) {
                     sqlStatements.add(addPrimaryKey.toString());
                 } /*else {
                         throw new IllegalArgumentException("There is no primary key!");
                     }*/
 
-                //TODO: figure out why duplicate statements exist in sqlStatements
                 //execute an sql statement for each column needing to be added
                 if (sqlStatements.size() > 0) {//must be at least 1 column to add
                     try {
@@ -247,7 +241,6 @@ public class Repo {
                 }
 
                 preparedStatement.append(" (");
-                //TODO remove the use of columnNodes
                 for (int i = 0; i < columnNodes.size(); i++) {
                     preparedStatement.append(columnNodes.get(i).getName() + ", ");
 
@@ -374,26 +367,29 @@ public class Repo {
                         field.setAccessible(true);
                         Object fieldVal = field.get(o);
                         field.setAccessible(false);
-                        pstmtFields.add(field);
                         if (field.getAnnotation(Column.class).type().equals("varchar")) {
                             if (fieldVal != null) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
+                                pstmtFields.add(field);
                             }
                         } else if (field.getAnnotation(Column.class).type().equals("date")) {
                             if (fieldVal != null) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
+                                pstmtFields.add(field);
                             }
                         } else if (field.getAnnotation(Column.class).type().equals("serial")) {
                             if (Integer.parseInt(String.valueOf(fieldVal)) != 0) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
+                                pstmtFields.add(field);
                             }
                         } else if (field.getAnnotation(Column.class).type().equals("double")) {
                             if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
+                                pstmtFields.add(field);
                             }
                         }
                     }
