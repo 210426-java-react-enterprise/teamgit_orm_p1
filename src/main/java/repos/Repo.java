@@ -24,6 +24,8 @@ public class Repo {
 
         //the object array that has been updated will be returned
         ArrayList<Object> objArr = null;
+        ArrayList<Field> pstmtFields = null;
+        String idName = null;
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
             Class<?> clazz = o.getClass();
@@ -46,6 +48,7 @@ public class Repo {
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
                             if (f.getAnnotation(Column.class).updateable()) {
+                                pstmtFields.add(f);
                                 preparedStatement.append(f.getAnnotation(Column.class).name());
                                 preparedStatement.append(" = ? ");
                                 preparedStatement.append(" , ");
@@ -58,10 +61,15 @@ public class Repo {
                         idField.setAccessible(false);
                     }
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString());
-                    pstmt = preparePreparedStatement(o, pstmt);
+
+                    //Sends in a new String[] containing the Id field's name, retrieves newly generated Id
+                    PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
+
+                    //made a separate method to prepare a pstmt from an ArrayList of relevant fields
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
                     ResultSet rs = pstmt.executeQuery();
 
+                    //constructs an object ArrayList from the provided object
                     objArr = createObjectArrayFromResultSet(o, rs);
 
                 }//end if
@@ -234,8 +242,6 @@ public class Repo {
                         if (!f.isAnnotationPresent(Id.class)) {
                             System.out.println(column.name() + " " + column.nullable() + " " + column.unique());
                             columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
-                            //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
-                            //values (username, password, email, firstName, lastName, dob)
                         }
                     }
                 }
@@ -352,10 +358,11 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-    public Object select(Object o) {
+    public ArrayList<Object> select(Object o) {
         Class<?> clazz = o.getClass();
         //This will serve as the return object, returns null if proper algorithm does not execute
         ArrayList<Object> objArr = null;
+        ArrayList<Field> pstmtFields = null;
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
             if (clazz.isAnnotationPresent((Entity.class))) {
@@ -367,6 +374,7 @@ public class Repo {
                         field.setAccessible(true);
                         Object fieldVal = field.get(o);
                         field.setAccessible(false);
+                        pstmtFields.add(field);
                         if (field.getAnnotation(Column.class).type().equals("varchar")) {
                             if (fieldVal != null) {
                                 String columnName = field.getAnnotation(Column.class).name();
@@ -397,7 +405,7 @@ public class Repo {
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
                     //this method written specifically to adds to the '?' of the pstmt
-                    pstmt = preparePreparedStatement(o, pstmt);
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
 
 
                     ResultSet rs = pstmt.executeQuery();
@@ -414,19 +422,18 @@ public class Repo {
     }
 
     //private class-restricted method for setting the '?' values of the pstmt
-    private PreparedStatement preparePreparedStatement(Object o, PreparedStatement pstmt) throws SQLException, IllegalAccessException {
+    private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt) throws SQLException, IllegalAccessException {
         int pstmtCount = 1;
-        Field[] fields = o.getClass().getDeclaredFields();
 
-        for (int i = 0; i < fields.length; i++) {
-            fields[i].setAccessible(true);
-            Object currentFieldVal = fields[i].get(o);
-            fields[i].setAccessible(false);
-            String type = fields[i].getAnnotation(Column.class).type();
+        for (int i = 0; i < fields.size(); i++) {
+            fields.get(i).setAccessible(true);
+            Object currentFieldVal = fields.get(i).get(o);
+            fields.get(i).setAccessible(false);
+            String type = fields.get(i).getAnnotation(Column.class).type();
 
             if (type.equals("date")) {
                 if (currentFieldVal != null) {
-                    fields[i].setAccessible(true);
+                    fields.get(i).setAccessible(true);
                     pstmt.setDate(pstmtCount, java.sql.Date.valueOf(String.valueOf(currentFieldVal)));
                     pstmtCount++;
                 }
