@@ -1,17 +1,14 @@
 import models.AppUser;
 import org.junit.After;
 import org.junit.Before;
-import static org.mockito.Mockito.*;
 import org.junit.Test;
-import org.mockito.Mock;
-import repos.UserRepo;
 import util.ConnectionFactory;
 
 import java.sql.Connection;
 
 public class InsertTest {
 
-    UserRepo userRepo;
+    Repo repo;
     AppUser appUser;
     Connection conn;
 
