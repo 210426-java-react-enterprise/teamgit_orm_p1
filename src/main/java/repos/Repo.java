@@ -14,19 +14,17 @@ import java.sql.*;
 import exceptions.*;
 
 
-/**
- * Takes in any object and constructs a query
- * @author Kevin Chang
- * @author Thomas Diendorf
- * @author Chris Levano
- */
 public class Repo {
 
     /**
      * @author Chris Levano
      * @author Kevin Chang
      */
-    public static void update(Object o) {
+    public ArrayList<Object> update(Object o) {
+
+        //the object array that has been updated will be returned
+        ArrayList<Object> objArr = null;
+
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
             Class<?> clazz = o.getClass();
 
@@ -38,7 +36,13 @@ public class Repo {
 
                     preparedStatement.append(" SET ");
                     Field[] fields = clazz.getDeclaredFields();
+                    String idColumnName = "";
+                    Field idField = null;
                     for (Field f : fields) {
+                        if (f.isAnnotationPresent(Id.class)) {
+                            idColumnName = f.getAnnotation(Id.class).name();
+                            idField = f;
+                        }
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
                             if (f.getAnnotation(Column.class).updateable()) {
@@ -48,300 +52,283 @@ public class Repo {
                             }
                         }
                     }
-
+                    if (idField != null) {
+                        idField.setAccessible(true);
+                        preparedStatement.append(" WHERE ").append(idColumnName).append(" = ").append(idField.get(o));
+                        idField.setAccessible(false);
+                    }
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-
                     PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString());
-                    //TODO we stopped here
+                    pstmt = preparePreparedStatement(o, pstmt);
+                    ResultSet rs = pstmt.executeQuery();
 
-                    String uid = null;
-                    int user_num;
-                    Field[] userFields = user.getDeclaredFields();
-                    for (Field uf : userFields) {
-                        Id column = uf.getAnnotation(Id.class);
-                        if (column != null) {
-                            if (uf.getAnnotation(Id.class).name().equals("user_id")) {
-                                uid = uf.getAnnotation(Id.class).name();
-                            }
-                        }//Set bal = bal + deposit
-                        preparedStatement.append(" WHERE ").append(uid).append(" = ").append(AppUser.getId());
-
-                        String sql = preparedStatement.toString();
-                        try {
-                            PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
-
-                            pstmt.executeUpdate();
-                            System.out.println("Check the database!");
-                        } catch (SQLException throwables) {
-                            throwables.printStackTrace();
-                        }
-                    }//end if
-                }//end if
-            }
-
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-    }
-
-    /*
-    CREATE TABLE users (
-        user_id serial NOT null constraint pk_user primary key,
-        first_name varchar(25) NOT NULL,
-        last_name varchar(25) NOT NULL,
-        username varchar(20) unique NOT null,
-        "password" varchar(255) NOT NULL,
-        email varchar(255) unique NOT null
-    );*/
-
-    /**
-     * @author Thomas
-     */
-    public static void addColumns(Object o, Connection conn) {
-            //check a class to determine columns for table.
-            Class<?> clazz = o.getClass();
-
-            System.out.println("Running buildTable()...");
-
-            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
-                if (clazz.isAnnotationPresent(Table.class)) {
-                    Table table = clazz.getAnnotation(Table.class);//Table annotation
-                    String tableName = table.name();//EX: tableName.name == "users"
-                    System.out.println("Inside createTable: " + tableName);
-
-
-                    StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
-                            .append(" add constraint ");
-
-                    boolean primaryKeyAssigned = false;
-
-                    LinkedList<String> sqlStatements = new LinkedList<>();
-
-                    for (Field f : clazz.getDeclaredFields()) {
-                        if (f.isAnnotationPresent(Column.class)) {
-                            Column column = f.getAnnotation(Column.class);
-
-                            StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
-                                    .append(" ADD COLUMN IF NOT EXISTS ");
-
-                            preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
-
-                            switch (f.getAnnotation(Column.class).type()) {
-                                case "varchar":
-                                    preparedStatement.append(" VARCHAR(");
-                                    preparedStatement.append(f.getAnnotation(Column.class).length());
-                                    preparedStatement.append(")");
-                                    //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
-                                    break;
-                                case "date":
-                                    preparedStatement.append(" DATE");
-                                    //System.out.print(" DATE");//checking
-                                    break;
-                                case "double":
-                                    preparedStatement.append(" DOUBLE(");
-                                    preparedStatement.append(f.getAnnotation(Column.class).length());
-                                    preparedStatement.append(")");
-                                    preparedStatement.append(" DEFAULT 0.00");
-
-                                    break;
-                                case "serial":
-                                    preparedStatement.append(" SERIAL");
-                                    //System.out.print(" SERIAL");//checking
-                                    break;
-                                case "int":
-                                    preparedStatement.append(" INTEGER");
-                                    preparedStatement.append(" DEFAULT 0");
-                                    break;
-                                default: //if no type is found...
-                                    throw new InvalidFieldException("Invalid data type!");
-                            }
-
-                            if (!f.getAnnotation(Column.class).nullable()) {
-                                preparedStatement.append(" not null");
-                                //System.out.print(" not null");//checking
-                            }
-
-                            if (f.getAnnotation(Column.class).unique()) {
-                                preparedStatement.append(" unique");
-                                //System.out.print(" unique");//checking
-                            }
-
-                            if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
-                                primaryKeyAssigned = true;
-                                addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
-                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
-                                    .append(")");
-                                //System.out.print(primaryKey);//checking
-                            }
-
-                            //TODO make composite key
-                            //TODO: restore this if non-unique entries become an issue.
-                            //if(!sqlStatements.contains(preparedStatement.toString())){
-                                sqlStatements.add(preparedStatement.toString());//no duplicates allowed
-                            //}
-                        }
-                    }//end for loop
-
-                    //TODO Doesn't handle composite keys yet
-                    if (primaryKeyAssigned) {
-                        sqlStatements.add(addPrimaryKey.toString());
-                    } /*else {
-                        throw new IllegalArgumentException("There is no primary key!");
-                    }*/
-
-                    //TODO: figure out why duplicate statements exist in sqlStatements
-                    //execute an sql statement for each column needing to be added
-                    if(sqlStatements.size() > 0) {//must be at least 1 column to add
-                        try {
-                            //reverse order so that DROP COLUMN statements are executed first.
-                            for(String q : sqlStatements){
-                                PreparedStatement pstmt = conn.prepareStatement(q);
-                                System.out.println(pstmt.toString());
-                                pstmt.executeUpdate();
-                            }
-                        } catch (SQLException e) {//a statement couldn't be executed
-                            System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
-                                    "  Finished adding/editing columns!");
-                            //e.printStackTrace();
-                        }
-                    }
-                }//end if for checking if class has @Table
-            }//end if for checking if class has @Entity
-            else {
-                System.out.println("Cannot create a table from class " + clazz.getName());
-            }
-
-    }//end createTable
-
-
-   
-
-  
-  public void save(Object o, Connection conn) {
-
-            Class<?> clazz = o.getClass();
-
-            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
-                if (clazz.isAnnotationPresent(Table.class)) {
-                    Table table = clazz.getAnnotation(Table.class);
-                    String tableName = table.name();//if tableName.name == "users"
-                    System.out.println(tableName);
-
-                    StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ").append(tableName);
-
-                    //TODO remove the use of columnNodes
-                    List<ColumnNode> columnNodes = new ArrayList<>();
-
-                    for (Field f : clazz.getDeclaredFields()) {
-                        Column column = f.getAnnotation(Column.class);
-                        if (column != null) {
-                            if (!f.isAnnotationPresent(Id.class)) {
-                                System.out.println(column.name() + " " + column.nullable() + " " + column.unique());
-                                columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
-                                //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
-                                //values (username, password, email, firstName, lastName, dob)
-                            }
-                        }
-                    }
-
-                    preparedStatement.append(" (");
-                    //TODO remove the use of columnNodes
-                    for (int i = 0; i < columnNodes.size(); i++) {
-                        preparedStatement.append(columnNodes.get(i).getName() + ", ");
-
-                    }
-
-                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    preparedStatement.append(") VALUES (");
-
-
-                    for (int i = 0; i < columnNodes.size(); i++) {
-                        preparedStatement.append("?, ");
-                    }
-                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    preparedStatement.append(")");
-
-                    String sql = preparedStatement.toString();
-
-                    //So we need to make a connection
-                    try {
-                        PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
-
-                        Field[] fields = clazz.getDeclaredFields();
-                        //We start at i = 1, because sql is indexed at 1, and because field[0] is id
-                        for (int i = 1; i <= columnNodes.size(); i++) {
-                            String type = fields[i].getAnnotation(Column.class).type();
-                            if (type.equals("date")) {
-                                fields[i].setAccessible(true);
-                                System.out.println(fields[i].get(o));
-                                pstmt.setDate(i, java.sql.Date.valueOf(String.valueOf(fields[i].get(o))));
-                                fields[i].setAccessible(false);
-                            }
-                            else if(type.equals("varchar")) {
-                                fields[i].setAccessible(true);
-                                System.out.println(fields[i].get(o));
-                                pstmt.setString(i, String.valueOf(fields[i].get(o)));
-                                fields[i].setAccessible(false);
-                            }
-                            else if(type.equals("int")) {
-                                fields[i].setAccessible(true);
-                                System.out.println(fields[i].get(o));
-                                pstmt.setInt(i, Integer.valueOf(String.valueOf(fields[i].get(o))));
-                                fields[i].setAccessible(false);
-                            }
-                        }
-
-
-                        int rowsInserted = pstmt.executeUpdate();
-
-                        //from some AppUser instance passed into here from elsewhere, we construct an accounts table
-                        if (rowsInserted != 0 && tableName.equals("users")) {
-                            ResultSet rs = pstmt.getGeneratedKeys();
-                            while (rs.next()) {
-                                Field idField = Arrays
-                                        .stream(fields)
-                                        .filter((field) -> field.isAnnotationPresent(Id.class))
-                                        .findFirst()
-                                        .orElseThrow(() -> new InvalidFieldException("This field does not exist in your Class!"));
-
-                                if (idField.isAnnotationPresent(Id.class)) {
-                                    //if user Id annotation is present (plus no duplicate)
-                                    Id id = idField.getAnnotation(Id.class);
-                                    String idName = id.name();
-                                    System.out.println(idName);
-                                    String account_insert = "INSERT INTO accounts (" + idName + ") values (?)";
-                                    PreparedStatement prepState = conn.prepareStatement(account_insert, new String[]{"account_num"});
-                                    prepState.setInt(1, rs.getInt(idName));
-                                    int account_num = prepState.executeUpdate();
-                                }
-
-                            }
-                        }
-                    } catch (java.sql.SQLException | java.lang.IllegalAccessException throwables) {
-                        throwables.printStackTrace();
-                    }
+                    objArr = createObjectArrayFromResultSet(o, rs);
 
                 }//end if
             }//end if
 
+        } catch (SQLException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+            e.printStackTrace();
+        }
+
+        return objArr;
+    }//end update()
+
+    /**
+     * @author Thomas
+     */
+    public void addColumns(Object o, Connection conn) {
+        //check a class to determine columns for table.
+        Class<?> clazz = o.getClass();
+
+        System.out.println("Running buildTable()...");
+
+        if (clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
+            if (clazz.isAnnotationPresent(Table.class)) {
+                Table table = clazz.getAnnotation(Table.class);//Table annotation
+                String tableName = table.name();//EX: tableName.name == "users"
+                System.out.println("Inside createTable: " + tableName);
+
+
+                StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                        .append(" add constraint ");
+
+                boolean primaryKeyAssigned = false;
+
+                LinkedList<String> sqlStatements = new LinkedList<>();
+
+                for (Field f : clazz.getDeclaredFields()) {
+                    if (f.isAnnotationPresent(Column.class)) {
+                        Column column = f.getAnnotation(Column.class);
+
+                        StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                                .append(" ADD COLUMN IF NOT EXISTS ");
+
+                        preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+
+                        switch (f.getAnnotation(Column.class).type()) {
+                            case "varchar":
+                                preparedStatement.append(" VARCHAR(");
+                                preparedStatement.append(f.getAnnotation(Column.class).length());
+                                preparedStatement.append(")");
+                                //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
+                                break;
+                            case "date":
+                                preparedStatement.append(" DATE");
+                                //System.out.print(" DATE");//checking
+                                break;
+                            case "double":
+                                preparedStatement.append(" DOUBLE(");
+                                preparedStatement.append(f.getAnnotation(Column.class).length());
+                                preparedStatement.append(")");
+                                preparedStatement.append(" DEFAULT 0.00");
+
+                                break;
+                            case "serial":
+                                preparedStatement.append(" SERIAL");
+                                //System.out.print(" SERIAL");//checking
+                                break;
+                            case "int":
+                                preparedStatement.append(" INTEGER");
+                                preparedStatement.append(" DEFAULT 0");
+                                break;
+                            default: //if no type is found...
+                                throw new InvalidFieldException("Invalid data type!");
+                        }
+
+                        if (!f.getAnnotation(Column.class).nullable()) {
+                            preparedStatement.append(" not null");
+                            //System.out.print(" not null");//checking
+                        }
+
+                        if (f.getAnnotation(Column.class).unique()) {
+                            preparedStatement.append(" unique");
+                            //System.out.print(" unique");//checking
+                        }
+
+                        //TODO haven't verified if this prints correct foreign key values
+                        if (f.isAnnotationPresent(ForeignKey.class)) {
+                            preparedStatement.append(" foreign key references"
+                                    + f.getAnnotation(ForeignKey.class).references()
+                                    + "("
+                                    + f.getAnnotation(ForeignKey.class).name()
+                                    + ") ");
+                            addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
+                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
+                                    .append(")");
+                        }
+
+                        //TODO make composite key, put it before Id.class check, and set primaryKeyAssigned to true
+                        //TODO new CompositeKey annotation necessary
+
+                        if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
+                            primaryKeyAssigned = true;
+                            addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
+                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
+                                    .append(")");
+                            //System.out.print(primaryKey);//checking
+                        }
+
+                        //TODO: restore this if non-unique entries become an issue.
+                        //if(!sqlStatements.contains(preparedStatement.toString())){
+                        sqlStatements.add(preparedStatement.toString());//no duplicates allowed
+                        //}
+                    }
+                }//end for loop
+
+                //TODO Doesn't handle composite keys yet
+                if (primaryKeyAssigned) {
+                    sqlStatements.add(addPrimaryKey.toString());
+                } /*else {
+                        throw new IllegalArgumentException("There is no primary key!");
+                    }*/
+
+                //TODO: figure out why duplicate statements exist in sqlStatements
+                //execute an sql statement for each column needing to be added
+                if (sqlStatements.size() > 0) {//must be at least 1 column to add
+                    try {
+                        //reverse order so that DROP COLUMN statements are executed first.
+                        for (String q : sqlStatements) {
+                            PreparedStatement pstmt = conn.prepareStatement(q);
+                            System.out.println(pstmt.toString());
+                            pstmt.executeUpdate();
+                        }
+                    } catch (SQLException e) {//a statement couldn't be executed
+                        System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
+                                "  Finished adding/editing columns!");
+                        //e.printStackTrace();
+                    }
+                }
+            }//end if for checking if class has @Table
+        }//end if for checking if class has @Entity
+        else {
+            System.out.println("Cannot create a table from class " + clazz.getName());
+        }
+
+    }//end createTable
+
+    /**
+     * Takes in any object and constructs an insert statement
+     * @author Kevin Chang
+     * @author Thomas Diendorf
+     * @author Chris Levano
+     */
+    public void save(Object o, Connection conn) {
+
+        Class<?> clazz = o.getClass();
+
+        if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
+            if (clazz.isAnnotationPresent(Table.class)) {
+                Table table = clazz.getAnnotation(Table.class);
+                String tableName = table.name();//if tableName.name == "users"
+                System.out.println(tableName);
+
+                StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ").append(tableName);
+
+                //TODO remove the use of columnNodes
+                List<ColumnNode> columnNodes = new ArrayList<>();
+
+                for (Field f : clazz.getDeclaredFields()) {
+                    Column column = f.getAnnotation(Column.class);
+                    if (column != null) {
+                        if (!f.isAnnotationPresent(Id.class)) {
+                            System.out.println(column.name() + " " + column.nullable() + " " + column.unique());
+                            columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
+                            //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
+                            //values (username, password, email, firstName, lastName, dob)
+                        }
+                    }
+                }
+
+                preparedStatement.append(" (");
+                //TODO remove the use of columnNodes
+                for (int i = 0; i < columnNodes.size(); i++) {
+                    preparedStatement.append(columnNodes.get(i).getName() + ", ");
+
+                }
+
+                preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                preparedStatement.append(") VALUES (");
+
+
+                for (int i = 0; i < columnNodes.size(); i++) {
+                    preparedStatement.append("?, ");
+                }
+                preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                preparedStatement.append(")");
+
+                String sql = preparedStatement.toString();
+
+                //So we need to make a connection
+                try {
+                    PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
+
+                    Field[] fields = clazz.getDeclaredFields();
+                    //We start at i = 1, because sql is indexed at 1, and because field[0] is id
+                    for (int i = 1; i <= columnNodes.size(); i++) {
+                        String type = fields[i].getAnnotation(Column.class).type();
+                        if (type.equals("date")) {
+                            fields[i].setAccessible(true);
+                            System.out.println(fields[i].get(o));
+                            pstmt.setDate(i, java.sql.Date.valueOf(String.valueOf(fields[i].get(o))));
+                            fields[i].setAccessible(false);
+                        } else if (type.equals("varchar")) {
+                            fields[i].setAccessible(true);
+                            System.out.println(fields[i].get(o));
+                            pstmt.setString(i, String.valueOf(fields[i].get(o)));
+                            fields[i].setAccessible(false);
+                        } else if (type.equals("int")) {
+                            fields[i].setAccessible(true);
+                            System.out.println(fields[i].get(o));
+                            pstmt.setInt(i, Integer.valueOf(String.valueOf(fields[i].get(o))));
+                            fields[i].setAccessible(false);
+                        }
+                    }
+
+
+                    int rowsInserted = pstmt.executeUpdate();
+
+                    //from some AppUser instance passed into here from elsewhere, we construct an accounts table
+                    if (rowsInserted != 0 && tableName.equals("users")) {
+                        ResultSet rs = pstmt.getGeneratedKeys();
+                        while (rs.next()) {
+                            Field idField = Arrays
+                                    .stream(fields)
+                                    .filter((field) -> field.isAnnotationPresent(Id.class))
+                                    .findFirst()
+                                    .orElseThrow(() -> new InvalidFieldException("This field does not exist in your Class!"));
+
+                            if (idField.isAnnotationPresent(Id.class)) {
+                                //if user Id annotation is present (plus no duplicate)
+                                Id id = idField.getAnnotation(Id.class);
+                                String idName = id.name();
+                                System.out.println(idName);
+                                String account_insert = "INSERT INTO accounts (" + idName + ") values (?)";
+                                PreparedStatement prepState = conn.prepareStatement(account_insert, new String[]{"account_num"});
+                                prepState.setInt(1, rs.getInt(idName));
+                                int account_num = prepState.executeUpdate();
+                            }
+
+                        }
+                    }
+                } catch (java.sql.SQLException | java.lang.IllegalAccessException throwables) {
+                    throwables.printStackTrace();
+                }
+
+            }//end if
+        }//end if
+
     }
 
-
-    /*
-    SELECT * FROM INFORMATION_SCHEMA.TABLES
-    WHERE TABLE_NAME = N'Employees'
-
-    or
-
-    IF OBJECT_ID('table_name', 'U') IS NOT NULL
-
-    "CREATE TABLE IF NOT EXISTS " + tablename
+    /**
+     * creates a new table if not already exists
+     * @author Kevin Chang
+     * @author Thomas Diendorf
+     * @author Chris Levano
      */
-
-    public void create(Object o){
+    public void create(Object o) {
         Class<?> clazz = o.getClass();
-        try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
 
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw
                 if (clazz.isAnnotationPresent(Table.class)) {
@@ -360,23 +347,23 @@ public class Repo {
         }
     }
 
+
     /**
      * @author Chris Levano
      * @author Kevin Chang
      */
-
-    public Object select(Object o){
+    public Object select(Object o) {
         Class<?> clazz = o.getClass();
         //This will serve as the return object, returns null if proper algorithm does not execute
-        Object returnObject = null;
+        ArrayList<Object> objArr = null;
 
-        try(Connection conn = ConnectionFactory.getInstance().getConnection(o)){
-            if(clazz.isAnnotationPresent((Entity.class))){
-                if (clazz.isAnnotationPresent(Table.class)){
+        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+            if (clazz.isAnnotationPresent((Entity.class))) {
+                if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
                     StringBuilder select = new StringBuilder("SELECT * FROM " + tableName + " WHERE ");
                     Field[] fields = clazz.getDeclaredFields();
-                    for (Field field: fields) {
+                    for (Field field : fields) {
                         field.setAccessible(true);
                         Object fieldVal = field.get(o);
                         field.setAccessible(false);
@@ -402,134 +389,127 @@ public class Repo {
                             }
                         }
                     }
+                    //deletes the last 'and'
                     select.deleteCharAt(select.lastIndexOf("A"));
                     select.deleteCharAt(select.lastIndexOf("N"));
                     select.deleteCharAt(select.lastIndexOf("D"));
 
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
-                    int pstmtCount = 1;
-                    for (int i = 0; i < fields.length; i++) {
-                        fields[i].setAccessible(true);
-                        Object currentFieldVal = fields[i].get(o);
-                        fields[i].setAccessible(false);
-                        String type = fields[i].getAnnotation(Column.class).type();
+                    //this method written specifically to adds to the '?' of the pstmt
+                    pstmt = preparePreparedStatement(o, pstmt);
 
-                        if (type.equals("date")) {
-                            if (currentFieldVal != null) {
-                                fields[i].setAccessible(true);
-                                pstmt.setDate(pstmtCount, java.sql.Date.valueOf(String.valueOf(currentFieldVal)));
-                                pstmtCount++;
-                            }
-                        }
-                        else if (type.equals("varchar")) {
-                            if (currentFieldVal != null) {
-                                //System.out.println(fields[i].get(o));
-                                pstmt.setString(pstmtCount, String.valueOf(currentFieldVal));
-                                pstmtCount++;
-                            }
-                        } else if (type.equals("int")) {
-                            if (Integer.parseInt(String.valueOf(currentFieldVal)) != 0) {
-                                //System.out.println(fields[i].get(o));
-                                pstmt.setInt(pstmtCount, Integer.parseInt(String.valueOf(currentFieldVal)));
-                                pstmtCount++;
-                            }
-                        }
-                    }
+
                     ResultSet rs = pstmt.executeQuery();
-                    while (rs.next()){
-                        //Creates an instance of the object to then invoke its methods
-                        returnObject = clazz.newInstance();
-                        //gathers all the methods
-                        Method[] methods = clazz.getDeclaredMethods();
-                        for (int i = 0; i <methods.length; i++) {
-                            System.out.println(methods[i]);
-                            if(methods[i].isAnnotationPresent(Setter.class)){
-                                String methodName = methods[i].getAnnotation(Setter.class).name();
-                                    for (Field field : fields) {
-                                        String columnName = field.getAnnotation(Column.class).name();
-                                        if(methodName.equals(columnName)){
-                                            String type = field.getAnnotation(Column.class).type();
-                                            switch(type) {
-                                                case "varchar":
-                                                    methods[i].setAccessible(true);
-                                                    //invoke method on the returnObject to set its values
-                                                    methods[i].invoke(returnObject, rs.getString(columnName));
-                                                    methods[i].setAccessible(false);
-                                                    break;
-                                                case "date":
-                                                    methods[i].setAccessible(true);
-                                                    methods[i].invoke(returnObject, String.valueOf(rs.getDate(columnName)));
-                                                    methods[i].setAccessible(false);
-                                                    break;
-                                                case "double":
-                                                    methods[i].setAccessible(true);
-                                                    methods[i].invoke(returnObject, rs.getDouble(columnName));
-                                                    methods[i].setAccessible(false);
-                                                    break;
-                                                case "int"://TODO: something for this?
-                                                case "serial":
-                                                    methods[i].setAccessible(true);
-                                                    methods[i].invoke(returnObject, rs.getInt(columnName));
-                                                    methods[i].setAccessible(false);
-                                                    break;
-                                                default:
-                                            }
 
-                                        }
-                                    }
-                            }
-                        }
-                    }
+                    //this method should return a new object from the database
+                    objArr = createObjectArrayFromResultSet(o, rs);
                 }
             }
 
         } catch (SQLException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
             e.printStackTrace();
         }
-        return returnObject;
+        return objArr;
     }
 
+    //private class-restricted method for setting the '?' values of the pstmt
+    private PreparedStatement preparePreparedStatement(Object o, PreparedStatement pstmt) throws SQLException, IllegalAccessException {
+        int pstmtCount = 1;
+        Field[] fields = o.getClass().getDeclaredFields();
 
+        for (int i = 0; i < fields.length; i++) {
+            fields[i].setAccessible(true);
+            Object currentFieldVal = fields[i].get(o);
+            fields[i].setAccessible(false);
+            String type = fields[i].getAnnotation(Column.class).type();
 
+            if (type.equals("date")) {
+                if (currentFieldVal != null) {
+                    fields[i].setAccessible(true);
+                    pstmt.setDate(pstmtCount, java.sql.Date.valueOf(String.valueOf(currentFieldVal)));
+                    pstmtCount++;
+                }
+            } else if (type.equals("varchar")) {
+                if (currentFieldVal != null) {
+                    //System.out.println(fields[i].get(o));
+                    pstmt.setString(pstmtCount, String.valueOf(currentFieldVal));
+                    pstmtCount++;
+                }
+            } else if (type.equals("int")) {
+                if (Integer.parseInt(String.valueOf(currentFieldVal)) != 0) {
+                    //System.out.println(fields[i].get(o));
+                    pstmt.setInt(pstmtCount, Integer.parseInt(String.valueOf(currentFieldVal)));
+                    pstmtCount++;
+                }
+            }
+            else if (type.equals("double")) {
+                if (Double.parseDouble(String.valueOf(currentFieldVal)) != 0) {
+                    //System.out.println(fields[i].get(o));
+                    pstmt.setDouble(pstmtCount, Double.parseDouble(String.valueOf(currentFieldVal)));
+                    pstmtCount++;
+                }
+            }
+        }
+        return pstmt;
+    }
 
-//    //TODO if at all
-//    public Object findUserByUsernameAndPassword(Object o){
-//        Object result = null;
-//        //reflect object
-//
-//        //get fields username and password
-//
-//        //check with db, if doesn't exist, return null
-//
-//        //if does exist:
-//
-//        //get all fields of object
-//        //extract constructor and get a .newInstance()
-//        //use reflection to get all the setters of the constructor and set values with the
-//        //field values from database (rs.getString("column_label"))
-//            //note: make sure you have an if statement that controls .getString or .getInt or .getDate depending on constructor parameters
-//            //you can read what parameters a given constructor takes using Class[] parameterTypes = constructor.getParameterTypes();
-//
-//        return result;
-//    }
-  
+    //private class-restricted method for acquiring data from database and using object setters to return an array of the object instances
+    private ArrayList<Object> createObjectArrayFromResultSet(Object o, ResultSet rs) throws SQLException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        Class<?> clazz = o.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+        //Creates an instance of the object to then invoke its methods
+        Object returnObject = null;
+        ArrayList<Object> objArr = new ArrayList<>();
 
+        while (rs.next()) {
+            //gathers all the methods
+            returnObject = clazz.newInstance();
+            Method[] methods = clazz.getDeclaredMethods();
+            for (int i = 0; i < methods.length; i++) {
+                System.out.println(methods[i]);
+                if (methods[i].isAnnotationPresent(Setter.class)) {
+                    String methodName = methods[i].getAnnotation(Setter.class).name();
+                    for (Field field : fields) {
+                        String columnName = field.getAnnotation(Column.class).name();
+                        if (methodName.equals(columnName)) {
+                            String type = field.getAnnotation(Column.class).type();
+                            switch (type) {
+                                case "varchar":
+                                    methods[i].setAccessible(true);
+                                    //invoke method on the returnObject to set its values
+                                    methods[i].invoke(returnObject, rs.getString(columnName));
+                                    methods[i].setAccessible(false);
+                                    break;
+                                case "date":
+                                    methods[i].setAccessible(true);
+                                    methods[i].invoke(returnObject, String.valueOf(rs.getDate(columnName)));
+                                    methods[i].setAccessible(false);
+                                    break;
+                                case "double":
+                                    methods[i].setAccessible(true);
+                                    methods[i].invoke(returnObject, rs.getDouble(columnName));
+                                    methods[i].setAccessible(false);
+                                    break;
+                                case "int":
+                                case "serial":
+                                    methods[i].setAccessible(true);
+                                    methods[i].invoke(returnObject, rs.getInt(columnName));
+                                    methods[i].setAccessible(false);
+                                    break;
+                                case "timestamp":
+                                    methods[i].setAccessible(true);
+                                    methods[i].invoke(returnObject, String.valueOf(rs.getTimestamp(columnName)));
+                                    methods[i].setAccessible(false);
+                                    break;
+                            }
 
-
-//    //TODO pending implementation
-//    public boolean isEmailAvailable(Object o){
-//        //you can still assume you're looking email, because it's embedded in theo bject
-//        //you need reflection to get the column names and run queries
-//        return false;
-//    }
-//
-//
-//    //TODO pending implementation
-//    public boolean isUsernameAvailable(Object o){
-//        //you can still assume you're looking email, because it's embedded in theo bject
-//        //you need reflection to get the column names and run queries
-//        return false;
-//    }
+                        }
+                    }
+                }
+            }
+            objArr.add(returnObject);
+        }
+        return objArr;
+    }
 }
-

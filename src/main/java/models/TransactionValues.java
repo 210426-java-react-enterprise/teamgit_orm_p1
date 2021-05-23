@@ -17,10 +17,12 @@ import annotations.*;
 @Table(name = "transactions")
 public class TransactionValues {
 
-    @Id
+    @Id(name = "trans_id")
     @Column(name = "trans_id", type = "serial", nullable = false, unique = true, updateable = false)
     private static int trans_id;
 
+    //Foreign key states the column name of the id, as well as the table it references
+    @ForeignKey(name = "account_id", references = "accounts")
     @Column(name = "account_id", type = "int", nullable = false, unique = false, updateable = false)
     private static int account_id;
 

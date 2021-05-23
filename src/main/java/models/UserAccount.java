@@ -14,6 +14,8 @@ public class UserAccount {
     @Column(name = "account_num", nullable = false, unique = true, type = "serial", updateable = false)
     private static int account_num;
 
+    //Foreign key states the column name of the id, as well as the table it references
+    @ForeignKey(name = "user_id", references = "users")
     @Column(name = "user_id", nullable = false, unique = true, type = "int", updateable = false)
     private static int id;
 
