@@ -276,15 +276,15 @@ public class Repo {
 
 
     /*
-    DELETE FROM tableName WHERE columnName='value';
+    DELETE FROM tableName WHERE columnName='value'
+    AND WHERE columnName='value';
      */
 
     /**
      * Deletes a row of data from an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for deletion.
-     * @param conn A Connection to the SQL database.
      */
-    public void delete(Object o, Connection conn){
+    public void delete(Object o) throws IllegalAccessException {
         Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
 
         if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
@@ -293,36 +293,62 @@ public class Repo {
                 String tableName = table.name();//if tableName.name == "users"
                 System.out.println("Deleting from " + tableName);
 
-                StringBuilder removeRow = new StringBuilder().append("DELETE FROM " + tableName + " WHERE ");
+                StringBuilder removeRow = new StringBuilder().append("DELETE FROM ").append(tableName).append(" WHERE ");
 
                 String columnUsed = null;
 
                 for (Field f : clazz.getDeclaredFields()) {
-                    Column column = f.getAnnotation(Column.class);
-                    if (column != null) {
-                        if (f.isAnnotationPresent(Column.class)) {
-                            if(f.getAnnotation(Column.class).unique() && !f.isAnnotationPresent(Id.class)){//don't delete based on serials
-                                columnUsed = f.getAnnotation(Column.class).name();
-                                removeRow.append(columnUsed + " = \'");
+                    f.setAccessible(true);
+                    if(f.get(o) != null) {//if there is a value to be referenced for row deletion
+                        Column column = f.getAnnotation(Column.class);
+                        if (column != null) {
+                            if (f.isAnnotationPresent(Column.class)) {
+                                if (f.isAnnotationPresent(Id.class)) {//if id serial is 0, then it is not to be used for this
+                                    if(f.get(o).equals(0)){//SQL rows start at 1, not 0, so 0 indicates Id is null
+                                        continue;//skip Id if it's not considered
+                                    }
+                                }//else continue on as normal, with Id being added
 
+                                columnUsed = f.getAnnotation(Column.class).name();
+                                removeRow.append(columnUsed).append(" = \'");//column where matching value will be
+                                //System.out.println("Deleting row with value: " + f.get(o));
                                 f.setAccessible(true);
-                                try {
-                                    System.out.println("Deleting row with value: " + f.get(o));
-                                    removeRow.append(f.get(o) + "\'");
-                                    PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
-                                    System.out.println("Executing statement: " + pstmt);
-                                    pstmt.executeUpdate();
-                                    break;
-                                } catch (IllegalAccessException | SQLException e) {
-                                    e.printStackTrace();
-                                    break;
-                                }
+                                removeRow.append(f.get(o)).append("\'");//matching value in the colomn to indicate the row
+                                f.setAccessible(false);
+
                             }
                         }
                     }
+
+                    removeRow.append(" AND ");//if we go for another loop
+
+                }//end foreach
+
+                /*removeRow.deleteCharAt(removeRow.lastIndexOf(" "));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("E"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("R"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("E"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("H"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("W"));*/
+                removeRow.deleteCharAt(removeRow.lastIndexOf(" "));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("D"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("N"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf("A"));
+                removeRow.deleteCharAt(removeRow.lastIndexOf(" "));
+
+
+                //should have removeRow ready at this point; put it into a PreparedStatement
+
+                try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+                    PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
+                    System.out.println("Executing statement: " + pstmt);
+                    pstmt.executeUpdate();
+                } catch (SQLException e){
+                    e.printStackTrace();
                 }
-            }//end if
-        }//end if
+
+            }//end if Table present
+        }//end if Entity present
     }
 
 
