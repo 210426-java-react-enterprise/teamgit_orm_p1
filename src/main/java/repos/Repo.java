@@ -18,7 +18,7 @@ import exceptions.*;
  * @author Thomas Diendorf
  * @author Chris Levano
  */
-public class UserRepo {
+public class Repo {
 
     /*
     CREATE TABLE users (
