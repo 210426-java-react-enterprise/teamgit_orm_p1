@@ -289,8 +289,8 @@ public class UserRepo {
                 for (Field f : clazz.getDeclaredFields()) {
                     Column column = f.getAnnotation(Column.class);
                     if (column != null) {
-                        if (f.isAnnotationPresent(Column.class)) {//because this is serial and automated
-                            if(f.getAnnotation(Column.class).name().equals("username")) {
+                        if (f.isAnnotationPresent(Column.class)) {
+                            if(f.getAnnotation(Column.class).unique() && !f.isAnnotationPresent(Id.class)){//don't delete based on serials
                                 columnUsed = f.getAnnotation(Column.class).name();
                                 removeRow.append(columnUsed + " = \'");
 
@@ -502,7 +502,7 @@ public class UserRepo {
 
     //TODO pending implementation
     public boolean isEmailAvailable(Object o){
-        //you can still assume you're looking email, because it's embedded in theo bject
+        //you can still assume you're looking email, because it's embedded in the object
         //you need reflection to get the column names and run queries
         return false;
     }
