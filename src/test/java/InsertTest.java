@@ -50,6 +50,7 @@ public class InsertTest {
     public void insertValuesTest(){
         repo.insert(appUser, conn);
         repo.delete(appUser, conn);
+
         //userRepo.create(mockAppUser);
         //userRepo.insert(mockAppUser, mockConn);
     }
