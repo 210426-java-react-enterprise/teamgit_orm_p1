@@ -31,7 +31,9 @@ public class UserRepo {
     );*/
 
     /**
-     * @author Thomas
+     * Object that has a Table, Entity, and Column annotations.
+     * @param o Object that has a Table, Entity, and Column annotations.
+     * @param conn Connection to an SQL database.
      */
     public static void addColumns(Object o, Connection conn) {
             //check a class to determine columns for table.
@@ -119,7 +121,6 @@ public class UserRepo {
                         throw new IllegalArgumentException("There is no primary key!");
                     }*/
 
-                    //TODO: figure out why duplicate statements exist in sqlStatements
                     //execute an sql statement for each column needing to be added
                     if(sqlStatements.size() > 0) {//must be at least 1 column to add
                         try {
@@ -151,11 +152,15 @@ public class UserRepo {
     VALUES (value1, value2, value3, ...);
      */
 
-    //TODO: Thomas needs to work on this
-    //TODO: verification that table, and columns, already exist?
     //rename from save() to insert()
     //build a query that genetically queries the objects fields
     //just edit this
+
+    /**
+     * Inserts a row of data into an SQL table.
+     * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for insertion.
+     * @param conn A Connection to the SQL database.
+     */
   public void insert(Object o, Connection conn) {
 
             Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
@@ -273,6 +278,12 @@ public class UserRepo {
     /*
     DELETE FROM tableName WHERE columnName='value';
      */
+
+    /**
+     * Deletes a row of data from an SQL table.
+     * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for deletion.
+     * @param conn A Connection to the SQL database.
+     */
     public void delete(Object o, Connection conn){
         Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
 
@@ -327,6 +338,10 @@ public class UserRepo {
     "CREATE TABLE IF NOT EXISTS " + tablename
      */
 
+    /**
+     * Creates an SQL table, then calls on other methods to add columns and a row of data (if any).
+     * @param o Object that has a Table and entity annotations (with optional Column annotations).
+     */
     public void create(Object o){
         Class<?> clazz = o.getClass();
         try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
