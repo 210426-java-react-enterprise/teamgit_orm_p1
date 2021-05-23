@@ -169,9 +169,6 @@ public class UserRepo {
                     StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
                             .append(tableName).append(" (");
 
-                    //TODO remove the use of columnNodes
-                    //List<ColumnNode> columnNodes = new ArrayList<>();
-
                     //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
                     //values (username, password, email, firstName, lastName, dob)
                     LinkedList<String> columnsUsed = new LinkedList<>();//holds column names
@@ -180,25 +177,14 @@ public class UserRepo {
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
                             if (!f.isAnnotationPresent(Id.class)) {//because this is serial and automated
-                                //System.out.println(column.name() + " " + column.nullable() + " " + column.unique());
-                                //columnNodes.add(new ColumnNode(column.name(), column.nullable(), column.unique()));
 
                                 //add column name to list
                                 columnsUsed.add(f.getAnnotation(Column.class).name());
-
-                                //this will be more difficult than you think
-                                //columnData.add();
 
                             }
                         }
                     }
 
-                    //preparedStatement.append(" (");
-                    //TODO remove the use of columnNodes
-                    /*for (int i = 0; i < columnsUsed.size(); i++) {
-                        preparedStatement.append(columnsUsed.get(i) + ", ");
-
-                    }*/
 
                     for(String col : columnsUsed){
                         preparedStatement.append(col + ", ");
@@ -206,11 +192,6 @@ public class UserRepo {
 
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
                     preparedStatement.append(") VALUES (");
-
-
-                    /*for (int i = 0; i < columnNodes.size(); i++) {
-                        preparedStatement.append("?, ");
-                    }*/
 
                     for (int i = 0; i < columnsUsed.size(); i++) {
                         preparedStatement.append("?, ");
@@ -276,7 +257,10 @@ public class UserRepo {
 
                             }
                         }
-                    } catch (java.sql.SQLException | java.lang.IllegalAccessException throwables) {
+                    } catch (java.sql.SQLException throwables) {
+                        System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
+                        //throwables.printStackTrace();
+                    } catch (java.lang.IllegalAccessException throwables){
                         throwables.printStackTrace();
                     }
 
@@ -284,6 +268,52 @@ public class UserRepo {
             }//end if
 
     }
+
+
+    /*
+    DELETE FROM tableName WHERE columnName='value';
+     */
+    public void delete(Object o, Connection conn){
+        Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
+
+        if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
+            if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
+                Table table = clazz.getAnnotation(Table.class);
+                String tableName = table.name();//if tableName.name == "users"
+                System.out.println("Deleting from " + tableName);
+
+                StringBuilder removeRow = new StringBuilder().append("DELETE FROM " + tableName + " WHERE ");
+
+                String columnUsed = null;
+
+                for (Field f : clazz.getDeclaredFields()) {
+                    Column column = f.getAnnotation(Column.class);
+                    if (column != null) {
+                        if (f.isAnnotationPresent(Column.class)) {//because this is serial and automated
+                            if(f.getAnnotation(Column.class).name().equals("username")) {
+                                columnUsed = f.getAnnotation(Column.class).name();
+                                removeRow.append(columnUsed + " = \'");
+
+                                f.setAccessible(true);
+                                try {
+                                    System.out.println("Deleting row with value: " + f.get(o));
+                                    removeRow.append(f.get(o) + "\'");
+                                    PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
+                                    System.out.println("Executing statement: " + pstmt);
+                                    pstmt.executeUpdate();
+                                    break;
+                                } catch (IllegalAccessException | SQLException e) {
+                                    e.printStackTrace();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }//end if
+        }//end if
+    }
+
 
 
     /*
