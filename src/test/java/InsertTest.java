@@ -51,8 +51,6 @@ public class InsertTest {
         repo.insert(appUser, conn);
         repo.delete(appUser, conn);
 
-        //delete all rows with dob with a certain year/date and younger?
-
         //userRepo.create(mockAppUser);
         //userRepo.insert(mockAppUser, mockConn);
     }
