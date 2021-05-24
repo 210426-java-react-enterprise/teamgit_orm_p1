@@ -315,12 +315,12 @@ public class Repo {
                                 f.setAccessible(true);
                                 removeRow.append(f.get(o)).append("\'");//matching value in the colomn to indicate the row
                                 f.setAccessible(false);
-
+                                removeRow.append(" AND ");//if we go for another loop
                             }
                         }
                     }
 
-                    removeRow.append(" AND ");//if we go for another loop
+
 
                 }//end foreach
 
