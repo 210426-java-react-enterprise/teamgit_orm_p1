@@ -11,13 +11,15 @@ import annotations.*;
 public class UserAccount {
 
     @Id(name = "account_num")
-    @Column(name = "account_num", nullable = false, unique = true, type = "serial")
+    @Column(name = "account_num", nullable = false, unique = true, type = "serial", updateable = false)
     private static int account_num;
 
-    @Column(name = "user_id", nullable = false, unique = true, type = "int")
+    //Foreign key states the column name of the id, as well as the table it references
+    @ForeignKey(name = "user_id", references = "users")
+    @Column(name = "user_id", nullable = false, unique = true, type = "int", updateable = false)
     private static int id;
 
-    @Column(name = "balance", nullable = false, unique = false, type = "double", length = "12,2")
+    @Column(name = "balance", nullable = false, unique = false, type = "double", length = "12,2", updateable = true)
     private double balance;
 
     public static int getAccount_num() {

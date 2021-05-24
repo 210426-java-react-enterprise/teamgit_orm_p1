@@ -9,6 +9,7 @@ public @interface Column {
     String name() default "";
     boolean nullable();
     boolean unique();
+    boolean updateable();
     String type();
     String length() default "";
 
