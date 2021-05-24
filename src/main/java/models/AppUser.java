@@ -13,9 +13,10 @@ import java.time.LocalDate;
  */
 
 @Entity()
-@Connection(//url = "jdbc:postgresql://database-swekevin.cwvfowetr0c7.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=project1",
-            url = "jdbc:postgresql://project0-accounts.comfkmj3hfze.us-west-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
-            username = "thomas",
+@Connection(url = "jdbc:postgresql://database-swekevin.cwvfowetr0c7.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=project1",
+            //url = "jdbc:postgresql://project0-accounts.comfkmj3hfze.us-west-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
+            //username = "thomas",
+            username = "postgres",
             password = "revature")
 @Table(name = "test_users")
 public class AppUser {
@@ -39,8 +40,8 @@ public class AppUser {
     @Column(name = "last_name", nullable = false, unique = false, type = "varchar", length = "25", updateable = true)
     private String lastName;
 
-    @Column(name = "dob", nullable = false, unique = false, type = "date", updateable = false)
 
+    @Column(name = "dob", nullable = false, unique = false, type = "date", updateable = false)
     private String dob;
 
     @Constructor(name = "users", type = "noargs")
