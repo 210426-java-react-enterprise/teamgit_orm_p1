@@ -1,6 +1,7 @@
 package repos;
 
 import java.lang.reflect.*;
+import java.sql.Array;
 import java.util.List;
 import annotations.*;
 import java.util.ArrayList;
@@ -220,7 +221,7 @@ public class Repo {
      * Inserts a row of data into an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for insertion.
      */
-  public ArrayList<Object> insert(Object o) {
+    public ArrayList<Object> insert(Object o) {
 
             Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
 
@@ -278,37 +279,27 @@ public class Repo {
                       pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
 
                       System.out.println("Executing this statement:\n" + pstmt.toString());
-                      pstmt.executeUpdate();
+                      int rowsInserted = pstmt.executeUpdate();
 
-                      ResultSet rs = pstmt.getGeneratedKeys();
+                      //following block handles generated id after insert
+                      if (rowsInserted != 0) {
+                          ResultSet rs = pstmt.getGeneratedKeys();
+                          while (rs.next()) {
+                              Method idMethod = Arrays.stream(clazz
+                                      .getDeclaredMethods())
+                                      .filter((method) -> method.isAnnotationPresent(Setter.class) && method.isAnnotationPresent(Id.class))
+                                      .findFirst()
+                                      .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
 
-//                      //from some AppUser instance passed into here from elsewhere, we construct an accounts table
-//                      if (rowsInserted != 0 && tableName.equals("users")) {
-//                          ResultSet rs = pstmt.getGeneratedKeys();
-//                          while (rs.next()) {
-//                              Field idField = Arrays
-//                                      .stream(fields)
-//                                      .filter((field) -> field.isAnnotationPresent(Id.class))
-//                                      .findFirst()
-//                                      .orElseThrow(() -> new InvalidFieldException("This field does not exist in your Class!"));
-//
-//                              if (idField.isAnnotationPresent(Id.class)) {
-//                                  //if user Id annotation is present (plus no duplicate)
-//                                  Id id = idField.getAnnotation(Id.class);
-//                                  String idName = id.name();
-//                                  System.out.println(idName);
-//                                  String account_insert = "INSERT INTO accounts (" + idName + ") values (?)";
-//                                  PreparedStatement prepState = conn.prepareStatement(account_insert, new String[]{"account_num"});
-//                                  prepState.setInt(1, rs.getInt(idName));
-//                                  int account_num = prepState.executeUpdate();
-//                              }
-//
-//                          }
-//                      }
+                              //invokes setter on passed in object to place in newly generated id, adds to objArr for return
+                              objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
+
+                          }
+                      }
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
                       //throwables.printStackTrace();
-                  } catch (java.lang.IllegalAccessException throwables) {
+                  } catch (IllegalAccessException | InvocationTargetException throwables) {
                       throwables.printStackTrace();
                   }
 

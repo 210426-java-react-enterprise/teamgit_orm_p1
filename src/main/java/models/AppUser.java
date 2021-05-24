@@ -95,6 +95,7 @@ public class AppUser {
     }
 
     //Setters
+    @Id(name = "user_id")
     @Setter(name = "user_id")
     public int setId(int id) {
         this.id = id;
