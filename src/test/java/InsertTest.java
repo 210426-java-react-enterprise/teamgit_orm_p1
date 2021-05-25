@@ -49,9 +49,11 @@ public class InsertTest {
     }
 
     @Test
+
     public void insertValuesTest(){
         repo.insert(appUser);
-        repo.delete(appUser, conn);
+        repo.delete(appUser);
+
 
         //delete all rows with dob with a certain year/date and younger?
 
