@@ -18,12 +18,12 @@ import java.time.LocalDate;
             //username = "thomas",
             username = "postgres",
             password = "revature")
-@Table(name = "test_users")
+@Table(name = "users")
 public class AppUser {
 
     @Id(name = "user_id") //Specifies Primary Key of entity
     @Column(name = "user_id", nullable = false, unique = true, type = "serial", updateable = false)
-    private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
+    private int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
 
     @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20", updateable = false)
     private String username;
@@ -63,7 +63,7 @@ public class AppUser {
     }
     //Getters
     @Getter(name = "user_id")
-    public static int getId() {
+    public int getId() {
         return id;
     }
 

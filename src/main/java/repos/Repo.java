@@ -2,6 +2,8 @@ package repos;
 
 import java.lang.reflect.*;
 import java.sql.Array;
+import java.sql.Date;
+import java.time.*;
 import java.util.List;
 import annotations.*;
 import java.util.ArrayList;
@@ -24,11 +26,16 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-    public ArrayList<Object> update(Object o) {
+    public void update(Object o) {
 
         //the object array that has been updated will be returned
-        ArrayList<Object> objArr = null;
-        ArrayList<Field> pstmtFields = null;
+        //ArrayList<Object> objArr = null;
+        ArrayList<Field> pstmtFields = new ArrayList<>();
+        ArrayList<Field> whereFields = new ArrayList<>();
+
+        //keeps track of the initial parameter of pstmt.setParameter(pstmtCount, val); so that you can use call to
+        //preparePreparedStatement twice
+        int pstmtCount = 1;
         String idName = null;
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
@@ -47,42 +54,64 @@ public class Repo {
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
                             if (f.getAnnotation(Column.class).updateable()) {
-                                pstmtFields.add(f);
-                                preparedStatement.append(f.getAnnotation(Column.class).name());
-                                preparedStatement.append(" = ? ");
-                                preparedStatement.append(" , ");
+                                //if (f != null) {
+                                    pstmtFields.add(f);
+                                    preparedStatement.append(f.getAnnotation(Column.class).name());
+                                    preparedStatement.append(" = ?");
+                                    preparedStatement.append(", ");
+                                    pstmtCount++;
+                                //}
                             }
                         }
                     }
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
                     //use stream method to extract out primary key id
                     Field idField = streamIdField(fields);
-
-                    //essentially, updates are set to occur on matching serial id's
-                    if (idField != null) {
-                        idField.setAccessible(true);
-                        preparedStatement.append(" WHERE ").append(idField.getAnnotation(Id.class).name()).append(" = ").append(idField.get(o));
-                        idField.setAccessible(false);
+                    if(fields != null){
+                        preparedStatement.append(" WHERE ");
                     }
-                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                    for (Field f : fields) {
+                        //essentially, updates are set to occur on matching serial id's
+                        //id cannot be zero, must be unique and non-updateable, to check where clause
+                        if(f.isAnnotationPresent(Id.class)) {
+                            f.setAccessible(true);
+                            if (Integer.parseInt(String.valueOf(f.get(o))) != 0) {
+                                preparedStatement.append(f.getAnnotation(Id.class).name()).append(" = ").append("?").append(", ");
+                                whereFields.add(f);
+                            }
+                            f.setAccessible(false);
+                        }else if(!f.getAnnotation(Column.class).updateable()){
+                            f.setAccessible(true);
+                            preparedStatement.append(f.getAnnotation(Column.class).name()).append(" = ").append("?").append(" AND ");
+                            f.setAccessible(false);
+                            whereFields.add(f);
+                        }
+                    }
+
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf("A"));
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf("N"));
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf("D"));
+
+
+                    System.out.println(preparedStatement.toString());
 
                     //Sends in a new String[] containing the Id field's name, retrieves newly generated Id
                     PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
 
                     //made a separate method to prepare a pstmt from an ArrayList of relevant fields
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
-                    ResultSet rs = pstmt.executeQuery();
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
-                    //constructs an object ArrayList from the provided object
-                    objArr = createObjectArrayFromResultSet(o, rs);
+                    pstmt = preparePreparedStatement(o, whereFields, pstmt, pstmtCount);
+                    pstmt.executeUpdate();
+
 
                 }//end if
             }//end if
 
-        } catch (SQLException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+        } catch (SQLException | IllegalAccessException e) {
             e.printStackTrace();
         }
 
-        return objArr;
     }//end update()
 
     /**
@@ -221,7 +250,7 @@ public class Repo {
      * Inserts a row of data into an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for insertion.
      */
-    public ArrayList<Object> insert(Object o) {
+    public void insert(Object o) {
 
             Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
 
@@ -276,7 +305,7 @@ public class Repo {
                   try {
                       PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
 
-                      pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
+                      pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
                       System.out.println("Executing this statement:\n" + pstmt.toString());
                       int rowsInserted = pstmt.executeUpdate();
@@ -292,14 +321,15 @@ public class Repo {
                                       .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
 
                               //invokes setter on passed in object to place in newly generated id, adds to objArr for return
-                              objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
+                              //TODO Fix this later
+                              //objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
 
                           }
                       }
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
-                      //throwables.printStackTrace();
-                  } catch (IllegalAccessException | InvocationTargetException throwables) {
+                      throwables.printStackTrace();
+                  } catch (IllegalAccessException throwables) {
                       throwables.printStackTrace();
                   }
 
@@ -308,7 +338,7 @@ public class Repo {
       } catch (SQLException e) {
           e.printStackTrace();
       }
-    return objArr;
+    //return objArr;
   }
 
     private Field streamIdField(Field[] fields) {
@@ -460,7 +490,7 @@ public class Repo {
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
                     //this method written specifically to adds to the '?' of the pstmt
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
 
                     ResultSet rs = pstmt.executeQuery();
@@ -478,9 +508,7 @@ public class Repo {
     }
 
     //private class-restricted method for setting the '?' values of the pstmt
-    private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt) throws SQLException, IllegalAccessException {
-        int pstmtCount = 1;
-
+    private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt, int pstmtCount) throws SQLException, IllegalAccessException {
         for (int i = 0; i < fields.size(); i++) {
             fields.get(i).setAccessible(true);
             Object currentFieldVal = fields.get(i).get(o);
@@ -490,7 +518,9 @@ public class Repo {
             if (type.equals("date")) {
                 if (currentFieldVal != null) {
                     fields.get(i).setAccessible(true);
-                    pstmt.setDate(pstmtCount, java.sql.Date.valueOf(String.valueOf(currentFieldVal)));
+//                    String date = String.valueOf(currentFieldVal);
+//                    date = date.substring(0, date.length()-2);
+                    pstmt.setDate(pstmtCount, Date.valueOf(String.valueOf(currentFieldVal)));
                     pstmtCount++;
                 }
             } else if (type.equals("varchar")) {
