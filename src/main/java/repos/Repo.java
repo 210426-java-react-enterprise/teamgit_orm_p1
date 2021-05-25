@@ -276,12 +276,6 @@ public class Repo {
                   StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
                           .append(tableName).append(" (");
 
-                  //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
-                  //values (username, password, email, firstName, lastName, dob)
-
-                  //LinkedList<String> columnsUsed = new LinkedList<>();//holds column names
-                  //LinkedList<String> columnData = new LinkedList<>();//holds each value to be inserted into the row for each column
-
 
                   Field[] fields = clazz.getDeclaredFields();
 
@@ -316,7 +310,7 @@ public class Repo {
                       System.out.println("Executing this statement:\n" + pstmt.toString());
                       pstmt.executeUpdate();
 
-                      //following block handles generated id after insert
+
 //                      if (rowsInserted != 0) {
 //                          ResultSet rs = pstmt.getGeneratedKeys();
 //                          while (rs.next()) {
@@ -332,6 +326,7 @@ public class Repo {
 //
 //                          }
 //                      }
+
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
                       throwables.printStackTrace();
