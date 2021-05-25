@@ -1,6 +1,9 @@
 package repos;
 
 import java.lang.reflect.*;
+import java.sql.Array;
+import java.sql.Date;
+import java.time.*;
 import java.util.List;
 import annotations.*;
 import java.util.ArrayList;
@@ -23,11 +26,16 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-    public ArrayList<Object> update(Object o) {
+    public void update(Object o) {
 
         //the object array that has been updated will be returned
-        ArrayList<Object> objArr = null;
-        ArrayList<Field> pstmtFields = null;
+        //ArrayList<Object> objArr = null;
+        ArrayList<Field> pstmtFields = new ArrayList<>();
+        ArrayList<Field> whereFields = new ArrayList<>();
+
+        //keeps track of the initial parameter of pstmt.setParameter(pstmtCount, val); so that you can use call to
+        //preparePreparedStatement twice
+        int pstmtCount = 1;
         String idName = null;
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
@@ -41,48 +49,69 @@ public class Repo {
 
                     preparedStatement.append(" SET ");
                     Field[] fields = clazz.getDeclaredFields();
-                    String idColumnName = "";
-                    Field idField = null;
+
                     for (Field f : fields) {
-                        if (f.isAnnotationPresent(Id.class)) {
-                            idColumnName = f.getAnnotation(Id.class).name();
-                            idField = f;
-                        }
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
                             if (f.getAnnotation(Column.class).updateable()) {
-                                pstmtFields.add(f);
-                                preparedStatement.append(f.getAnnotation(Column.class).name());
-                                preparedStatement.append(" = ? ");
-                                preparedStatement.append(" , ");
+                                //if (f != null) {
+                                    pstmtFields.add(f);
+                                    preparedStatement.append(f.getAnnotation(Column.class).name());
+                                    preparedStatement.append(" = ?");
+                                    preparedStatement.append(", ");
+                                    pstmtCount++;
+                                //}
                             }
                         }
                     }
-                    if (idField != null) {
-                        idField.setAccessible(true);
-                        preparedStatement.append(" WHERE ").append(idColumnName).append(" = ").append(idField.get(o));
-                        idField.setAccessible(false);
-                    }
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                    //use stream method to extract out primary key id
+                    Field idField = streamIdField(fields);
+                    if(fields != null){
+                        preparedStatement.append(" WHERE ");
+                    }
+                    for (Field f : fields) {
+                        //essentially, updates are set to occur on matching serial id's
+                        //id cannot be zero, must be unique and non-updateable, to check where clause
+                        if(f.isAnnotationPresent(Id.class)) {
+                            f.setAccessible(true);
+                            if (Integer.parseInt(String.valueOf(f.get(o))) != 0) {
+                                preparedStatement.append(f.getAnnotation(Id.class).name()).append(" = ").append("?").append(", ");
+                                whereFields.add(f);
+                            }
+                            f.setAccessible(false);
+                        }else if(!f.getAnnotation(Column.class).updateable()){
+                            f.setAccessible(true);
+                            preparedStatement.append(f.getAnnotation(Column.class).name()).append(" = ").append("?").append(" AND ");
+                            f.setAccessible(false);
+                            whereFields.add(f);
+                        }
+                    }
+
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf("A"));
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf("N"));
+                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf("D"));
+
+
+                    System.out.println(preparedStatement.toString());
 
                     //Sends in a new String[] containing the Id field's name, retrieves newly generated Id
                     PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
 
                     //made a separate method to prepare a pstmt from an ArrayList of relevant fields
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
-                    ResultSet rs = pstmt.executeQuery();
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
-                    //constructs an object ArrayList from the provided object
-                    objArr = createObjectArrayFromResultSet(o, rs);
+                    pstmt = preparePreparedStatement(o, whereFields, pstmt, pstmtCount);
+                    pstmt.executeUpdate();
+
 
                 }//end if
             }//end if
 
-        } catch (SQLException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+        } catch (SQLException | IllegalAccessException e) {
             e.printStackTrace();
         }
 
-        return objArr;
     }//end update()
 
     /**
@@ -220,119 +249,105 @@ public class Repo {
 
      * Inserts a row of data into an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for insertion.
-     * @param conn A Connection to the SQL database.
      */
-  public void insert(Object o, Connection conn) {
+    public void insert(Object o) {
 
             Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
 
-            if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
-                if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
-                    Table table = clazz.getAnnotation(Table.class);
-                    String tableName = table.name();//if tableName.name == "users"
-                    System.out.println(tableName);
+            //hold an ArrayList of fields that will be passed into pstmt
+            ArrayList<Field> pstmtFields = new ArrayList<>();
 
-                    StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
-                            .append(tableName).append(" (");
+            //return object array
+            ArrayList<Object> objArr = null;
 
-                    //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
-                    //values (username, password, email, firstName, lastName, dob)
-                    LinkedList<String> columnsUsed = new LinkedList<>();//holds column names
-                    //LinkedList<String> columnData = new LinkedList<>();//holds each value to be inserted into the row for each column
-                    for (Field f : clazz.getDeclaredFields()) {
-                        Column column = f.getAnnotation(Column.class);
-                        if (column != null) {
-                            if (!f.isAnnotationPresent(Id.class)) {//because this is serial and automated
+      try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+          if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
+              if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
+                  Table table = clazz.getAnnotation(Table.class);
+                  String tableName = table.name();//if tableName.name == "users"
+                  System.out.println(tableName);
 
-                                //add column name to list
-                                columnsUsed.add(f.getAnnotation(Column.class).name());
+                  StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
+                          .append(tableName).append(" (");
 
-                            }
-                        }
-                    }
+                  //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
+                  //values (username, password, email, firstName, lastName, dob)
+
+                  //LinkedList<String> columnsUsed = new LinkedList<>();//holds column names
+                  //LinkedList<String> columnData = new LinkedList<>();//holds each value to be inserted into the row for each column
 
 
-                    for(String col : columnsUsed){
-                        preparedStatement.append(col + ", ");
-                    }
+                  Field[] fields = clazz.getDeclaredFields();
 
-                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    preparedStatement.append(") VALUES (");
+                  for (Field f : fields) {
+                      Column column = f.getAnnotation(Column.class);
+                      if (column != null) {
+                          if (!f.isAnnotationPresent(Id.class)) {//because this is serial and automated
+                              preparedStatement.append(f.getAnnotation(Column.class).name() + ", ");
+                              pstmtFields.add(f);
+                          }
 
-                    for (int i = 0; i < columnsUsed.size(); i++) {
-                        preparedStatement.append("?, ");
-                    }
+                      }
+                  }
 
-                    preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    preparedStatement.append(")");
+                  preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                  preparedStatement.append(") VALUES (");
+                  for (Field f: pstmtFields) {
+                      preparedStatement.append("?, ");
+                  }
 
-                    String sql = preparedStatement.toString();
+                  preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
+                  preparedStatement.append(")");
 
-                    //So we need to make a connection
-                    try {
-                        PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"user_id"});
+                  //This method uses STREAMS to extract the primary key of annotation Id.class from an array of fields
+                  Field idField = streamIdField(fields);
 
-                        Field[] fields = clazz.getDeclaredFields();
-                        //We start at i = 1, because sql is indexed at 1, and because field[0] is id
-                        //for (int i = 1; i <= columnNodes.size(); i++) {
-                        for (int i = 1; i <= columnsUsed.size(); i++) {
-                            String type = fields[i].getAnnotation(Column.class).type();
-                            if (type.equals("date")) {
-                                fields[i].setAccessible(true);
-                                System.out.println(fields[i].get(o));
-                                pstmt.setDate(i, java.sql.Date.valueOf(String.valueOf(fields[i].get(o))));
-                                fields[i].setAccessible(false);
-                            }
-                            else if(type.equals("varchar")) {
-                                fields[i].setAccessible(true);
-                                System.out.println(fields[i].get(o));
-                                pstmt.setString(i, String.valueOf(fields[i].get(o)));
-                                fields[i].setAccessible(false);
-                            }
-                            else if(type.equals("int")) {
-                                fields[i].setAccessible(true);
-                                System.out.println(fields[i].get(o));
-                                pstmt.setInt(i, Integer.valueOf(String.valueOf(fields[i].get(o))));
-                                fields[i].setAccessible(false);
-                            }
-                        }
+                  try {
+                      PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
 
-                        System.out.println("Executing this statement:\n" + pstmt.toString());
-                        int rowsInserted = pstmt.executeUpdate();
+                      pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
-                        //from some AppUser instance passed into here from elsewhere, we construct an accounts table
-                        if (rowsInserted != 0 && tableName.equals("users")) {
-                            ResultSet rs = pstmt.getGeneratedKeys();
-                            while (rs.next()) {
-                                Field idField = Arrays
-                                        .stream(fields)
-                                        .filter((field) -> field.isAnnotationPresent(Id.class))
-                                        .findFirst()
-                                        .orElseThrow(() -> new InvalidFieldException("This field does not exist in your Class!"));
+                      System.out.println("Executing this statement:\n" + pstmt.toString());
+                      int rowsInserted = pstmt.executeUpdate();
 
-                                if (idField.isAnnotationPresent(Id.class)) {
-                                    //if user Id annotation is present (plus no duplicate)
-                                    Id id = idField.getAnnotation(Id.class);
-                                    String idName = id.name();
-                                    System.out.println(idName);
-                                    String account_insert = "INSERT INTO accounts (" + idName + ") values (?)";
-                                    PreparedStatement prepState = conn.prepareStatement(account_insert, new String[]{"account_num"});
-                                    prepState.setInt(1, rs.getInt(idName));
-                                    int account_num = prepState.executeUpdate();
-                                }
+                      //following block handles generated id after insert
+                      if (rowsInserted != 0) {
+                          ResultSet rs = pstmt.getGeneratedKeys();
+                          while (rs.next()) {
+                              Method idMethod = Arrays.stream(clazz
+                                      .getDeclaredMethods())
+                                      .filter((method) -> method.isAnnotationPresent(Setter.class) && method.isAnnotationPresent(Id.class))
+                                      .findFirst()
+                                      .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
 
-                            }
-                        }
-                    } catch (java.sql.SQLException throwables) {
-                        System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
-                        //throwables.printStackTrace();
-                    } catch (java.lang.IllegalAccessException throwables){
-                        throwables.printStackTrace();
-                    }
+                              //invokes setter on passed in object to place in newly generated id, adds to objArr for return
+                              //TODO Fix this later
+                              //objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
 
-                }//end if
-            }//end if
+                          }
+                      }
+                  } catch (java.sql.SQLException throwables) {
+                      System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
+                      throwables.printStackTrace();
+                  } catch (IllegalAccessException throwables) {
+                      throwables.printStackTrace();
+                  }
 
+              }//end if
+          }//end if
+      } catch (SQLException e) {
+          e.printStackTrace();
+      }
+    //return objArr;
+  }
+
+    private Field streamIdField(Field[] fields) {
+        Field idField = Arrays
+                .stream(fields)
+                .filter((field) -> field.isAnnotationPresent(Id.class))
+                .findFirst()
+                .orElseThrow(() -> new InvalidFieldException("This field does not exist in your Class!"));
+        return idField;
     }
 
 
@@ -413,18 +428,6 @@ public class Repo {
         }//end if Entity present
     }
 
-
-
-    /*
-    SELECT * FROM INFORMATION_SCHEMA.TABLES
-    WHERE TABLE_NAME = N'Employees'
-
-    or
-
-    IF OBJECT_ID('table_name', 'U') IS NOT NULL
-
-    "CREATE TABLE IF NOT EXISTS " + tablename
-     */
 
     /**
      * Creates an SQL table, then calls on other methods to add columns and a row of data (if any).
@@ -513,7 +516,7 @@ public class Repo {
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
                     //this method written specifically to adds to the '?' of the pstmt
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt);
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
 
                     ResultSet rs = pstmt.executeQuery();
@@ -531,9 +534,7 @@ public class Repo {
     }
 
     //private class-restricted method for setting the '?' values of the pstmt
-    private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt) throws SQLException, IllegalAccessException {
-        int pstmtCount = 1;
-
+    private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt, int pstmtCount) throws SQLException, IllegalAccessException {
         for (int i = 0; i < fields.size(); i++) {
             fields.get(i).setAccessible(true);
             Object currentFieldVal = fields.get(i).get(o);
@@ -543,7 +544,9 @@ public class Repo {
             if (type.equals("date")) {
                 if (currentFieldVal != null) {
                     fields.get(i).setAccessible(true);
-                    pstmt.setDate(pstmtCount, java.sql.Date.valueOf(String.valueOf(currentFieldVal)));
+//                    String date = String.valueOf(currentFieldVal);
+//                    date = date.substring(0, date.length()-2);
+                    pstmt.setDate(pstmtCount, Date.valueOf(String.valueOf(currentFieldVal)));
                     pstmtCount++;
                 }
             } else if (type.equals("varchar")) {

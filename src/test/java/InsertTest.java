@@ -49,15 +49,11 @@ public class InsertTest {
     }
 
     @Test
-    public void insertValuesTest() throws IllegalAccessException {
-        repo.insert(appUser, conn);
-        //repo.delete(appUser);
 
-        AppUser appUser2 = new AppUser();
-        //appUser2.setUsername("tester2");
-        appUser2.setDob("1990-01-01");
+    public void insertValuesTest(){
+        repo.insert(appUser);
+        repo.delete(appUser);
 
-        repo.delete(appUser2);
 
         //delete all rows with dob with a certain year/date and younger?
 
