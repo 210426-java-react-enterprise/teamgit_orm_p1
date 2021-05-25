@@ -10,7 +10,8 @@ import java.util.ArrayList;
 
 
 import models.*;
-import util.ConnectionFactory;
+import util.*;
+
 import java.sql.Connection;
 import java.util.*;
 import java.sql.*;
@@ -23,7 +24,6 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-
     public void update(Object o) {
 
         //the object array that has been updated will be returned
@@ -37,7 +37,7 @@ public class Repo {
 
         String idName = null;
 
-        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try (Connection conn = ConnectionPool.getInstance().getConnection()) {
             Class<?> clazz = o.getClass();
 
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
@@ -116,7 +116,6 @@ public class Repo {
 
 
     }//end update()
-    
     /**
      * Takes in any object and constructs an insert statement
      * @author Kevin Chang
@@ -137,7 +136,7 @@ public class Repo {
             //return object array
             ArrayList<Object> objArr = null;
 
-      try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+      try (Connection conn = ConnectionPool.getInstance().getConnection()) {
           if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
               if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
                   Table table = clazz.getAnnotation(Table.class);
@@ -285,7 +284,7 @@ public class Repo {
 
                 //should have removeRow ready at this point; put it into a PreparedStatement
 
-                try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+                try(Connection conn = ConnectionPool.getInstance().getConnection()) {
                     PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
                     System.out.println("Executing statement: " + pstmt);
                     pstmt.executeUpdate();
@@ -304,7 +303,7 @@ public class Repo {
      */
     public void create(Object o){
         Class<?> clazz = o.getClass();
-        try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try(Connection conn = ConnectionPool.getInstance().getConnection()) {
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw
                 if (clazz.isAnnotationPresent(Table.class)) {
                     Table table = clazz.getAnnotation(Table.class);
@@ -463,7 +462,7 @@ public class Repo {
         ArrayList<Object> objArr = null;
         ArrayList<Field> pstmtFields = new ArrayList<>();
 
-        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try (Connection conn = ConnectionPool.getInstance().getConnection()) {
             if (clazz.isAnnotationPresent((Entity.class))) {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
