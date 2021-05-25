@@ -23,6 +23,7 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
+
     public void update(Object o) {
 
         //the object array that has been updated will be returned
@@ -274,6 +275,7 @@ public class Repo {
                   StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
                           .append(tableName).append(" (");
 
+
                   Field[] fields = clazz.getDeclaredFields();
 
                   for (Field f : fields) {
@@ -307,6 +309,7 @@ public class Repo {
                       System.out.println("Executing this statement:\n" + pstmt.toString());
                       int rowsInserted = pstmt.executeUpdate();
 
+
 //                      //following block handles generated id after insert
 //                      if (rowsInserted != 0) {
 //                          ResultSet rs = pstmt.getGeneratedKeys();
@@ -323,6 +326,7 @@ public class Repo {
 //
 //                          }
 //                      }
+
 
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
@@ -368,6 +372,7 @@ public class Repo {
                 System.out.println("Deleting from " + tableName);
 
                 StringBuilder removeRow = new StringBuilder().append("DELETE FROM ").append(tableName).append(" WHERE ");
+
                 String columnUsed = null;
 
 

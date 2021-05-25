@@ -51,6 +51,7 @@ public class InsertTest {
     @Test
 
 
+
     public void insertValuesTest() throws IllegalAccessException {
         repo.insert(appUser);
         repo.delete(appUser);
