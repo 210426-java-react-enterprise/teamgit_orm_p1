@@ -258,7 +258,7 @@ public class Repo {
             ArrayList<Field> pstmtFields = new ArrayList<>();
 
             //return object array
-            ArrayList<Object> objArr = null;
+            //ArrayList<Object> objArr = null;
 
       try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
           if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
@@ -269,13 +269,6 @@ public class Repo {
 
                   StringBuilder preparedStatement = new StringBuilder().append("INSERT INTO ")
                           .append(tableName).append(" (");
-
-                  //insert into "tablename" ('username', 'password', 'email', 'firstName', 'lastName', 'dob')
-                  //values (username, password, email, firstName, lastName, dob)
-
-                  //LinkedList<String> columnsUsed = new LinkedList<>();//holds column names
-                  //LinkedList<String> columnData = new LinkedList<>();//holds each value to be inserted into the row for each column
-
 
                   Field[] fields = clazz.getDeclaredFields();
 
@@ -311,21 +304,21 @@ public class Repo {
                       int rowsInserted = pstmt.executeUpdate();
 
                       //following block handles generated id after insert
-                      if (rowsInserted != 0) {
-                          ResultSet rs = pstmt.getGeneratedKeys();
-                          while (rs.next()) {
-                              Method idMethod = Arrays.stream(clazz
-                                      .getDeclaredMethods())
-                                      .filter((method) -> method.isAnnotationPresent(Setter.class) && method.isAnnotationPresent(Id.class))
-                                      .findFirst()
-                                      .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
-
-                              //invokes setter on passed in object to place in newly generated id, adds to objArr for return
-                              //TODO Fix this later
-                              //objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
-
-                          }
-                      }
+//                      if (rowsInserted != 0) {
+//                          ResultSet rs = pstmt.getGeneratedKeys();
+//                          while (rs.next()) {
+//                              Method idMethod = Arrays.stream(clazz
+//                                      .getDeclaredMethods())
+//                                      .filter((method) -> method.isAnnotationPresent(Setter.class) && method.isAnnotationPresent(Id.class))
+//                                      .findFirst()
+//                                      .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
+//
+//                              //invokes setter on passed in object to place in newly generated id, adds to objArr for return
+//                              //Do we want to return an object? Fix this later
+//                              //objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
+//
+//                          }
+//                      }
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
                       throwables.printStackTrace();
