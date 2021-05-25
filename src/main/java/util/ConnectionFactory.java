@@ -1,7 +1,6 @@
 package util;
 
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -29,7 +28,15 @@ public class ConnectionFactory {
     }
 
     private ConnectionFactory(){
-        super();
+        InputStream is = Thread.currentThread()
+                .getContextClassLoader()
+                .getResourceAsStream("application.properties");
+
+        try {
+            props.load(is);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -54,10 +61,14 @@ public class ConnectionFactory {
         Class<?> clazz = o.getClass();
         if(clazz.isAnnotationPresent(annotations.Connection.class)){
             try {
-                conn = DriverManager.getConnection(
-                        clazz.getAnnotation(annotations.Connection.class).url(),
-                        clazz.getAnnotation(annotations.Connection.class).username(),
-                        clazz.getAnnotation(annotations.Connection.class).password());
+                    conn = DriverManager.getConnection(
+                            props.getProperty("host-url"),
+                            props.getProperty("username"),
+                            props.getProperty("password"));
+//                conn = DriverManager.getConnection(
+//                        clazz.getAnnotation(annotations.Connection.class).url(),
+//                        clazz.getAnnotation(annotations.Connection.class).username(),
+//                        clazz.getAnnotation(annotations.Connection.class).password());
 
             } catch (SQLException e) {
                 e.printStackTrace();

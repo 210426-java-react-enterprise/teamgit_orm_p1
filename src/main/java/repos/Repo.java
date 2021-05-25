@@ -64,8 +64,9 @@ public class Repo {
                         }
                     }
                     preparedStatement.deleteCharAt(preparedStatement.lastIndexOf(","));
-                    //use stream method to extract out primary key id
-                    Field idField = streamIdField(fields);
+                    //use stream method to extract out primary key id if an id exists
+
+                    //Field idField = streamIdField(fields);
                     if(fields != null){
                         preparedStatement.append(" WHERE ");
                     }
@@ -95,7 +96,7 @@ public class Repo {
                     System.out.println(preparedStatement.toString());
 
                     //Sends in a new String[] containing the Id field's name, retrieves newly generated Id
-                    PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
+                    PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString());
 
                     //made a separate method to prepare a pstmt from an ArrayList of relevant fields
 
@@ -234,7 +235,7 @@ public class Repo {
                     } catch (SQLException e) {//a statement couldn't be executed
                         System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
                                 "  Finished adding/editing columns!");
-                        //e.printStackTrace();
+                        e.printStackTrace();
                     }
                 }
             }//end if for checking if class has @Table
@@ -305,32 +306,32 @@ public class Repo {
                   preparedStatement.append(")");
 
                   //This method uses STREAMS to extract the primary key of annotation Id.class from an array of fields
-                  Field idField = streamIdField(fields);
+                  //Field idField = streamIdField(fields);
 
                   try {
-                      PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
+                      PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString());
 
                       pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
                       System.out.println("Executing this statement:\n" + pstmt.toString());
-                      int rowsInserted = pstmt.executeUpdate();
+                      pstmt.executeUpdate();
 
                       //following block handles generated id after insert
-                      if (rowsInserted != 0) {
-                          ResultSet rs = pstmt.getGeneratedKeys();
-                          while (rs.next()) {
-                              Method idMethod = Arrays.stream(clazz
-                                      .getDeclaredMethods())
-                                      .filter((method) -> method.isAnnotationPresent(Setter.class) && method.isAnnotationPresent(Id.class))
-                                      .findFirst()
-                                      .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
-
-                              //invokes setter on passed in object to place in newly generated id, adds to objArr for return
-                              //TODO Fix this later
-                              //objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
-
-                          }
-                      }
+//                      if (rowsInserted != 0) {
+//                          ResultSet rs = pstmt.getGeneratedKeys();
+//                          while (rs.next()) {
+//                              Method idMethod = Arrays.stream(clazz
+//                                      .getDeclaredMethods())
+//                                      .filter((method) -> method.isAnnotationPresent(Setter.class) && method.isAnnotationPresent(Id.class))
+//                                      .findFirst()
+//                                      .orElseThrow(() -> new InvalidMethodException("This method does not exist in your Class!"));
+//
+//                              //invokes setter on passed in object to place in newly generated id, adds to objArr for return
+//                              //TODO Fix this later
+//                              //objArr.add(idMethod.invoke(o, rs.getInt(idField.getAnnotation(Id.class).name())));
+//
+//                          }
+//                      }
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
                       throwables.printStackTrace();
@@ -346,6 +347,7 @@ public class Repo {
     //return objArr;
   }
 
+  /*
     private Field streamIdField(Field[] fields) {
         Field idField = Arrays
                 .stream(fields)
@@ -354,6 +356,8 @@ public class Repo {
                 .orElseThrow(() -> new InvalidFieldException("This field does not exist in your Class!"));
         return idField;
     }
+
+   */
 
 
     /*
@@ -441,8 +445,10 @@ public class Repo {
                     String tableName = table.name();//if tableName.name == "users"
                     String sql = ("CREATE TABLE IF NOT EXISTS " + tableName + "()");
                     Statement stmt = conn.createStatement();
-                    stmt.execute(sql);
-                    addColumns(o, conn);
+                    boolean result = stmt.execute(sql);
+                    if(result) {
+                        addColumns(o, conn);
+                    }
                 }
             }
         } catch (SQLException throwables) {
