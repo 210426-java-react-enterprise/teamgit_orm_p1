@@ -461,7 +461,7 @@ public class Repo {
         Class<?> clazz = o.getClass();
         //This will serve as the return object, returns null if proper algorithm does not execute
         ArrayList<Object> objArr = null;
-        ArrayList<Field> pstmtFields = null;
+        ArrayList<Field> pstmtFields = new ArrayList<>();
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
             if (clazz.isAnnotationPresent((Entity.class))) {
