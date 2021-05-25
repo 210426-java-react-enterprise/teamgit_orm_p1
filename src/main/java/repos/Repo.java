@@ -11,13 +11,10 @@ import java.util.ArrayList;
 
 import models.*;
 import util.ConnectionFactory;
-
-
 import java.sql.Connection;
 import java.util.*;
 import java.sql.*;
 import exceptions.*;
-
 
 
 public class Repo {
@@ -26,6 +23,7 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
+
     public void update(Object o) {
 
         //the object array that has been updated will be returned
@@ -36,6 +34,7 @@ public class Repo {
         //keeps track of the initial parameter of pstmt.setParameter(pstmtCount, val); so that you can use call to
         //preparePreparedStatement twice
         int pstmtCount = 1;
+
         String idName = null;
 
         try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
@@ -49,7 +48,7 @@ public class Repo {
 
                     preparedStatement.append(" SET ");
                     Field[] fields = clazz.getDeclaredFields();
-
+                  
                     for (Field f : fields) {
                         Column column = f.getAnnotation(Column.class);
                         if (column != null) {
@@ -99,18 +98,21 @@ public class Repo {
                     PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString(), new String[]{idField.getAnnotation(Id.class).name()});
 
                     //made a separate method to prepare a pstmt from an ArrayList of relevant fields
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
+                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
                     pstmt = preparePreparedStatement(o, whereFields, pstmt, pstmtCount);
                     pstmt.executeUpdate();
+
 
 
                 }//end if
             }//end if
 
+
         } catch (SQLException | IllegalAccessException e) {
             e.printStackTrace();
         }
+
 
     }//end update()
 
@@ -194,6 +196,7 @@ public class Repo {
                                     + f.getAnnotation(ForeignKey.class).name()
                                     + ") "
                                     + "on delete cascade");
+
                         }
 
                         //TODO make composite key, put it before Id.class check, and set primaryKeyAssigned to true
@@ -206,6 +209,7 @@ public class Repo {
                                     .append(")");
                             //System.out.print(primaryKey);//checking
                         }
+
 
 
                         sqlStatements.add(preparedStatement.toString());//no duplicates allowed
@@ -246,6 +250,7 @@ public class Repo {
      * @author Kevin Chang
      * @author Thomas Diendorf
      * @author Chris Levano
+
 
      * Inserts a row of data into an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for insertion.
@@ -401,12 +406,6 @@ public class Repo {
 
                 }//end foreach
 
-                /*removeRow.deleteCharAt(removeRow.lastIndexOf(" "));
-                removeRow.deleteCharAt(removeRow.lastIndexOf("E"));
-                removeRow.deleteCharAt(removeRow.lastIndexOf("R"));
-                removeRow.deleteCharAt(removeRow.lastIndexOf("E"));
-                removeRow.deleteCharAt(removeRow.lastIndexOf("H"));
-                removeRow.deleteCharAt(removeRow.lastIndexOf("W"));*/
                 removeRow.deleteCharAt(removeRow.lastIndexOf(" "));
                 removeRow.deleteCharAt(removeRow.lastIndexOf("D"));
                 removeRow.deleteCharAt(removeRow.lastIndexOf("N"));
@@ -436,7 +435,6 @@ public class Repo {
     public void create(Object o){
         Class<?> clazz = o.getClass();
         try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
-
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw
                 if (clazz.isAnnotationPresent(Table.class)) {
                     Table table = clazz.getAnnotation(Table.class);
@@ -458,7 +456,6 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-  
     public ArrayList<Object> select(Object o) {
         Class<?> clazz = o.getClass();
         //This will serve as the return object, returns null if proper algorithm does not execute
@@ -475,18 +472,18 @@ public class Repo {
                         field.setAccessible(true);
                         Object fieldVal = field.get(o);
                         field.setAccessible(false);
+
                         if (field.getAnnotation(Column.class).type().equals("varchar")) {
                             if (fieldVal != null) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
-
                                 pstmtFields.add(field);
+
                             }
                         } else if (field.getAnnotation(Column.class).type().equals("date")) {
                             if (fieldVal != null) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
-
                                 pstmtFields.add(field);
 
                             }
@@ -494,7 +491,6 @@ public class Repo {
                             if (Integer.parseInt(String.valueOf(fieldVal)) != 0) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
-
                                 pstmtFields.add(field);
 
                             }
@@ -502,13 +498,12 @@ public class Repo {
                             if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
                                 String columnName = field.getAnnotation(Column.class).name();
                                 select.append(columnName + " = ? AND ");
-
                                 pstmtFields.add(field);
+
                             }
                         }
                     }
                     //deletes the last 'and'
-
                     select.deleteCharAt(select.lastIndexOf("A"));
                     select.deleteCharAt(select.lastIndexOf("N"));
                     select.deleteCharAt(select.lastIndexOf("D"));
@@ -518,12 +513,10 @@ public class Repo {
                     //this method written specifically to adds to the '?' of the pstmt
                     pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
 
-
                     ResultSet rs = pstmt.executeQuery();
 
                     //this method should return a new object from the database
                     objArr = createObjectArrayFromResultSet(o, rs);
-
                 }
             }
 
@@ -535,6 +528,7 @@ public class Repo {
 
     //private class-restricted method for setting the '?' values of the pstmt
     private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt, int pstmtCount) throws SQLException, IllegalAccessException {
+
         for (int i = 0; i < fields.size(); i++) {
             fields.get(i).setAccessible(true);
             Object currentFieldVal = fields.get(i).get(o);
@@ -544,6 +538,7 @@ public class Repo {
             if (type.equals("date")) {
                 if (currentFieldVal != null) {
                     fields.get(i).setAccessible(true);
+
 //                    String date = String.valueOf(currentFieldVal);
 //                    date = date.substring(0, date.length()-2);
                     pstmt.setDate(pstmtCount, Date.valueOf(String.valueOf(currentFieldVal)));
@@ -632,4 +627,3 @@ public class Repo {
         return objArr;
     }
 }
-

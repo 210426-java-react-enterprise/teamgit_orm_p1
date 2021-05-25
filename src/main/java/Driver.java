@@ -25,6 +25,9 @@ public class Driver {
         //repo.insert(appUser2);
         repo.update(appUser);
 
+        repo.create(a);
+
+
         //users data: PK user_id, username, password, firstname, lastname, email, dob
         //accounts: PK account_id, FK user_id, balance
         //transactions: FK account_id, transaction_id, date/time, previous_balance, change (deposit + or withdrawal -)
