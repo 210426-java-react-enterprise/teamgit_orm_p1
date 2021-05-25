@@ -323,6 +323,7 @@ public class Repo {
 //
 //                          }
 //                      }
+
                   } catch (java.sql.SQLException throwables) {
                       System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
                       throwables.printStackTrace();
@@ -367,7 +368,6 @@ public class Repo {
                 System.out.println("Deleting from " + tableName);
 
                 StringBuilder removeRow = new StringBuilder().append("DELETE FROM ").append(tableName).append(" WHERE ");
-
                 String columnUsed = null;
 
 
