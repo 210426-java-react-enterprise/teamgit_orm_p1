@@ -10,7 +10,8 @@ import java.util.ArrayList;
 
 
 import models.*;
-import util.ConnectionFactory;
+import util.*;
+
 import java.sql.Connection;
 import java.util.*;
 import java.sql.*;
@@ -23,7 +24,6 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-
     public void update(Object o) {
 
         //the object array that has been updated will be returned
@@ -37,7 +37,7 @@ public class Repo {
 
         String idName = null;
 
-        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try (Connection conn = ConnectionPool.getInstance().getConnection()) {
             Class<?> clazz = o.getClass();
 
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
@@ -116,136 +116,6 @@ public class Repo {
 
 
     }//end update()
-
-    /**
-     * @author Thomas
-     */
-    public void addColumns(Object o, Connection conn) {
-        //check a class to determine columns for table.
-        Class<?> clazz = o.getClass();
-
-        System.out.println("Running buildTable()...");
-
-        if (clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
-            if (clazz.isAnnotationPresent(Table.class)) {
-                Table table = clazz.getAnnotation(Table.class);//Table annotation
-                String tableName = table.name();//EX: tableName.name == "users"
-                System.out.println("Inside createTable: " + tableName);
-
-
-                StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
-                        .append(" add constraint ");
-
-                boolean primaryKeyAssigned = false;
-
-                LinkedList<String> sqlStatements = new LinkedList<>();
-
-                for (Field f : clazz.getDeclaredFields()) {
-                    if (f.isAnnotationPresent(Column.class)) {
-                        Column column = f.getAnnotation(Column.class);
-
-                        StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
-                                .append(" ADD COLUMN IF NOT EXISTS ");
-
-                        preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
-
-                        switch (f.getAnnotation(Column.class).type()) {
-                            case "varchar":
-                                preparedStatement.append(" VARCHAR(");
-                                preparedStatement.append(f.getAnnotation(Column.class).length());
-                                preparedStatement.append(")");
-                                //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
-                                break;
-                            case "date":
-                                preparedStatement.append(" DATE");
-                                //System.out.print(" DATE");//checking
-                                break;
-                            case "double":
-                                preparedStatement.append(" DOUBLE(");
-                                preparedStatement.append(f.getAnnotation(Column.class).length());
-                                preparedStatement.append(")");
-                                preparedStatement.append(" DEFAULT 0.00");
-
-                                break;
-                            case "serial":
-                                preparedStatement.append(" SERIAL");
-                                //System.out.print(" SERIAL");//checking
-                                break;
-                            case "int":
-                                preparedStatement.append(" INTEGER");
-                                preparedStatement.append(" DEFAULT 0");
-                                break;
-                            default: //if no type is found...
-                                throw new InvalidFieldException("Invalid data type!");
-                        }
-
-                        if (!f.getAnnotation(Column.class).nullable()) {
-                            preparedStatement.append(" not null");
-                            //System.out.print(" not null");//checking
-                        }
-
-                        if (f.getAnnotation(Column.class).unique()) {
-                            preparedStatement.append(" unique");
-                            //System.out.print(" unique");//checking
-                        }
-
-                        //handles foreign keys
-                        if (f.isAnnotationPresent(ForeignKey.class)) {
-                            preparedStatement.append(" foreign key references"
-                                    + f.getAnnotation(ForeignKey.class).references()
-                                    + "("
-                                    + f.getAnnotation(ForeignKey.class).name()
-                                    + ") "
-                                    + "on delete cascade");
-
-                        }
-
-                        //TODO make composite key, put it before Id.class check, and set primaryKeyAssigned to true
-                        //TODO new CompositeKey annotation necessary
-
-                        if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
-                            primaryKeyAssigned = true;
-                            addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
-                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
-                                    .append(")");
-                            //System.out.print(primaryKey);//checking
-                        }
-
-
-
-                        sqlStatements.add(preparedStatement.toString());//no duplicates allowed
-                    }
-                }//end for loop
-
-                if (primaryKeyAssigned) {
-                    sqlStatements.add(addPrimaryKey.toString());
-                } /*else {
-                        throw new IllegalArgumentException("There is no primary key!");
-                    }*/
-
-                //execute an sql statement for each column needing to be added
-                if (sqlStatements.size() > 0) {//must be at least 1 column to add
-                    try {
-                        //reverse order so that DROP COLUMN statements are executed first.
-                        for (String q : sqlStatements) {
-                            PreparedStatement pstmt = conn.prepareStatement(q);
-                            System.out.println(pstmt.toString());
-                            pstmt.executeUpdate();
-                        }
-                    } catch (SQLException e) {//a statement couldn't be executed
-                        System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
-                                "  Finished adding/editing columns!");
-                        e.printStackTrace();
-                    }
-                }
-            }//end if for checking if class has @Table
-        }//end if for checking if class has @Entity
-        else {
-            System.out.println("Cannot create a table from class " + clazz.getName());
-        }
-
-    }//end createTable
-
     /**
      * Takes in any object and constructs an insert statement
      * @author Kevin Chang
@@ -266,7 +136,7 @@ public class Repo {
             //return object array
             ArrayList<Object> objArr = null;
 
-      try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+      try (Connection conn = ConnectionPool.getInstance().getConnection()) {
           if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
               if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
                   Table table = clazz.getAnnotation(Table.class);
@@ -414,7 +284,7 @@ public class Repo {
 
                 //should have removeRow ready at this point; put it into a PreparedStatement
 
-                try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+                try(Connection conn = ConnectionPool.getInstance().getConnection()) {
                     PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
                     System.out.println("Executing statement: " + pstmt);
                     pstmt.executeUpdate();
@@ -433,7 +303,7 @@ public class Repo {
      */
     public void create(Object o){
         Class<?> clazz = o.getClass();
-        try(Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try(Connection conn = ConnectionPool.getInstance().getConnection()) {
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw
                 if (clazz.isAnnotationPresent(Table.class)) {
                     Table table = clazz.getAnnotation(Table.class);
@@ -452,6 +322,135 @@ public class Repo {
         }
     }
 
+    /**
+     * @author Thomas
+     */
+    private void addColumns(Object o, Connection conn) {
+        //check a class to determine columns for table.
+        Class<?> clazz = o.getClass();
+
+        System.out.println("Running buildTable()...");
+
+        if (clazz.isAnnotationPresent(Entity.class)) {//if annotated has entity that has attributes to draw from
+            if (clazz.isAnnotationPresent(Table.class)) {
+                Table table = clazz.getAnnotation(Table.class);//Table annotation
+                String tableName = table.name();//EX: tableName.name == "users"
+                System.out.println("Inside createTable: " + tableName);
+
+
+                StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                        .append(" add constraint ");
+
+                boolean primaryKeyAssigned = false;
+
+                LinkedList<String> sqlStatements = new LinkedList<>();
+
+                for (Field f : clazz.getDeclaredFields()) {
+                    if (f.isAnnotationPresent(Column.class)) {
+                        Column column = f.getAnnotation(Column.class);
+
+                        StringBuilder preparedStatement = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                                .append(" ADD COLUMN IF NOT EXISTS ");
+
+                        preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+
+                        switch (f.getAnnotation(Column.class).type()) {
+                            case "varchar":
+                                preparedStatement.append(" VARCHAR(");
+                                preparedStatement.append(f.getAnnotation(Column.class).length());
+                                preparedStatement.append(")");
+                                //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
+                                break;
+                            case "date":
+                                preparedStatement.append(" DATE");
+                                //System.out.print(" DATE");//checking
+                                break;
+                            case "double":
+                                preparedStatement.append(" DOUBLE(");
+                                preparedStatement.append(f.getAnnotation(Column.class).length());
+                                preparedStatement.append(")");
+                                preparedStatement.append(" DEFAULT 0.00");
+
+                                break;
+                            case "serial":
+                                preparedStatement.append(" SERIAL");
+                                //System.out.print(" SERIAL");//checking
+                                break;
+                            case "int":
+                                preparedStatement.append(" INTEGER");
+                                preparedStatement.append(" DEFAULT 0");
+                                break;
+                            default: //if no type is found...
+                                throw new InvalidFieldException("Invalid data type!");
+                        }
+
+                        if (!f.getAnnotation(Column.class).nullable()) {
+                            preparedStatement.append(" not null");
+                            //System.out.print(" not null");//checking
+                        }
+
+                        if (f.getAnnotation(Column.class).unique()) {
+                            preparedStatement.append(" unique");
+                            //System.out.print(" unique");//checking
+                        }
+
+                        //handles foreign keys
+                        if (f.isAnnotationPresent(ForeignKey.class)) {
+                            preparedStatement.append(" foreign key references"
+                                    + f.getAnnotation(ForeignKey.class).references()
+                                    + "("
+                                    + f.getAnnotation(ForeignKey.class).name()
+                                    + ") "
+                                    + "on delete cascade");
+
+                        }
+
+                        //TODO make composite key, put it before Id.class check, and set primaryKeyAssigned to true
+                        //TODO new CompositeKey annotation necessary
+
+                        if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
+                            primaryKeyAssigned = true;
+                            addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
+                                    .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
+                                    .append(")");
+                            //System.out.print(primaryKey);//checking
+                        }
+
+
+
+                        sqlStatements.add(preparedStatement.toString());//no duplicates allowed
+                    }
+                }//end for loop
+
+                if (primaryKeyAssigned) {
+                    sqlStatements.add(addPrimaryKey.toString());
+                } /*else {
+                        throw new IllegalArgumentException("There is no primary key!");
+                    }*/
+
+                //execute an sql statement for each column needing to be added
+                if (sqlStatements.size() > 0) {//must be at least 1 column to add
+                    try {
+                        //reverse order so that DROP COLUMN statements are executed first.
+                        for (String q : sqlStatements) {
+                            PreparedStatement pstmt = conn.prepareStatement(q);
+                            System.out.println(pstmt.toString());
+                            pstmt.executeUpdate();
+                        }
+                    } catch (SQLException e) {//a statement couldn't be executed
+                        System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
+                                "  Finished adding/editing columns!");
+                        e.printStackTrace();
+                    }
+                }
+            }//end if for checking if class has @Table
+        }//end if for checking if class has @Entity
+        else {
+            System.out.println("Cannot create a table from class " + clazz.getName());
+        }
+
+    }//end addColumns
+
 
     /**
      * @author Chris Levano
@@ -463,7 +462,7 @@ public class Repo {
         ArrayList<Object> objArr = null;
         ArrayList<Field> pstmtFields = new ArrayList<>();
 
-        try (Connection conn = ConnectionFactory.getInstance().getConnection(o)) {
+        try (Connection conn = ConnectionPool.getInstance().getConnection()) {
             if (clazz.isAnnotationPresent((Entity.class))) {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
