@@ -28,13 +28,13 @@
             <version>3.9.0</version>
         </dependency>
 
-        <!--<dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            &lt;!&ndash; version needs to be >= 3.5.0 &ndash;&gt;
-            <version>${3.5.0}</version>
-            <scope>test</scope>
-        </dependency>-->
+        <!-- c3p0 connnection pooling https://mvnrepository.com/artifact/com.mchange/c3p0 -->
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.5</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.postgresql</groupId>

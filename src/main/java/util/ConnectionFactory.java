@@ -11,6 +11,7 @@ import annotations.*;
 /**Establishes the connection to the SQL server
  *
  */
+@Deprecated
 public class ConnectionFactory {
 
     /**
