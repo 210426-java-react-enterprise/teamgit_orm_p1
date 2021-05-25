@@ -1,5 +1,6 @@
 package models;
 
+@Deprecated
 public class ColumnNode<T> {
 
     private String name;
