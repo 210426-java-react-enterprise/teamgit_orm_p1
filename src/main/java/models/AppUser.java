@@ -17,14 +17,15 @@ import java.time.LocalDate;
             //url = "jdbc:postgresql://project0-accounts.comfkmj3hfze.us-west-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
             //username = "thomas",
             username = "postgres",
-
             password = "revature")
-@Table(name = "test_users")
+@Table(name = "users")
 public class AppUser {
 
     @Id(name = "user_id") //Specifies Primary Key of entity
     @Column(name = "user_id", nullable = false, unique = true, type = "serial", updateable = false)
-    private static int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
+
+    private int id;//can be primitive, or primitive wrapper; including java.util.Date; java.sql.Date;
+
 
     @Column(name = "username", nullable = false, unique = true, type = "varchar", length = "20", updateable = false)
     private String username;
@@ -42,9 +43,7 @@ public class AppUser {
     private String lastName;
 
 
-
     @Column(name = "dob", nullable = false, unique = false, type = "date", updateable = false)
-
     private String dob;
 
     @Constructor(name = "users", type = "noargs")
@@ -66,7 +65,7 @@ public class AppUser {
     }
     //Getters
     @Getter(name = "user_id")
-    public static int getId() {
+    public int getId() {
         return id;
     }
 
@@ -98,6 +97,7 @@ public class AppUser {
     }
 
     //Setters
+    @Id(name = "user_id")
     @Setter(name = "user_id")
     public int setId(int id) {
         this.id = id;

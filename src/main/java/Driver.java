@@ -13,13 +13,17 @@ public class Driver {
 
         //AppUser contains @Connection with application properties injected
 
-       // AppUser appUser = new AppUser("swekevin", "password!", "kevin.chang@revature.net", "Kevin", "Chang", "1998-12-20");
+        AppUser appUser = new AppUser("swekevin", "passwortestupdate", "kevin.chang@revature.net", "Chris", "Levano", "1998-12-20");
+        AppUser appUser2 = new AppUser("swekevin", "password", "kevin1.chang@revature.net", "Kevin", "Chang", "1998-12-20");
 //        System.out.println("+-----------------+");
 //        userRepo.execute(appUser);
 //        System.out.println("+-----------------+");
-        AppUser appUser2 = new AppUser();
+       // AppUser appUser2 = new AppUser();
         AppUser a = new AppUser();
 
+        //repo.create(a);
+        //repo.insert(appUser2);
+        repo.update(appUser);
 
         repo.create(a);
 
