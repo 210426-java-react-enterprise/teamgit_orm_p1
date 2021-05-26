@@ -495,6 +495,7 @@ public class Repo {
                                 pstmtFields.add(field);
 
                             }
+                        //TODO this makes it impossible to query balances of 0.00
                         } else if (field.getAnnotation(Column.class).type().equals("double")) {
                             if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
                                 String columnName = field.getAnnotation(Column.class).name();
