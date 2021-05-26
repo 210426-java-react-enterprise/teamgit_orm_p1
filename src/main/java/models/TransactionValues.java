@@ -10,10 +10,6 @@ import annotations.*;
 
 
 @Entity
-@Connection(//url = "jdbc:postgresql://database-swekevin.cwvfowetr0c7.us-east-1.rds.amazonaws.com:5432/postgres?currentSchema=project1",
-        url = "jdbc:postgresql://project0-accounts.comfkmj3hfze.us-west-1.rds.amazonaws.com:5432/postgres?currentSchema=public",
-        username = "thomas",
-        password = "revature")
 @Table(name = "transactions")
 public class TransactionValues {
 
