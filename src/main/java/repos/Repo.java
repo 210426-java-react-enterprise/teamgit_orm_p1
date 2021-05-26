@@ -466,6 +466,7 @@ public class Repo {
             if (clazz.isAnnotationPresent((Entity.class))) {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
+                    //TODO the where clause should be hardcoded here, in case we want to select all users or something
                     StringBuilder select = new StringBuilder("SELECT * FROM " + tableName + " WHERE ");
                     Field[] fields = clazz.getDeclaredFields();
                     for (Field field : fields) {
