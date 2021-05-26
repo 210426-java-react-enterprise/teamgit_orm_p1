@@ -466,6 +466,7 @@ public class Repo {
             if (clazz.isAnnotationPresent((Entity.class))) {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
+                    //TODO the where clause should be hardcoded here, in case we want to select all users or something
                     StringBuilder select = new StringBuilder("SELECT * FROM " + tableName + " WHERE ");
                     Field[] fields = clazz.getDeclaredFields();
                     for (Field field : fields) {
@@ -494,6 +495,7 @@ public class Repo {
                                 pstmtFields.add(field);
 
                             }
+                        //TODO this makes it impossible to query balances of 0.00
                         } else if (field.getAnnotation(Column.class).type().equals("double")) {
                             if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
                                 String columnName = field.getAnnotation(Column.class).name();
