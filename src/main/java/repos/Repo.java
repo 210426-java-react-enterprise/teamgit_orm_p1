@@ -289,7 +289,9 @@ public class Repo {
                     System.out.println("Executing statement: " + pstmt);
                     pstmt.executeUpdate();
                 } catch (SQLException e){
+                    e.printStackTrace();
                     throw new ResourceNotFoundException();
+
                 }
 
             }//end if Table present
