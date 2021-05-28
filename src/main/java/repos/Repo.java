@@ -24,6 +24,7 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
+
     public void update(Object o) throws IllegalAccessException {
 
         //the object array that has been updated will be returned
@@ -113,9 +114,11 @@ public class Repo {
         } catch (SQLException e) {
             throw new ResourcePersistenceException();
         }
+
          catch (IllegalAccessException e) {
             throw new ResourceNotAccessibleException();
         }
+
 
 
     }//end update()
@@ -438,7 +441,9 @@ public class Repo {
                             pstmt.executeUpdate();
                         }
                     } catch (SQLException e) {//a statement couldn't be executed
+
                         throw new ResourceDuplicationException();
+
                     }
                 }
             }//end if for checking if class has @Table
