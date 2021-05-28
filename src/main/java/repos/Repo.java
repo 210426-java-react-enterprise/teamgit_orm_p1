@@ -24,7 +24,8 @@ public class Repo {
      * @author Chris Levano
      * @author Kevin Chang
      */
-    public void update(Object o) {
+
+    public void update(Object o) throws IllegalAccessException {
 
         //the object array that has been updated will be returned
         //ArrayList<Object> objArr = null;
@@ -110,9 +111,14 @@ public class Repo {
             }//end if
 
 
-        } catch (SQLException | IllegalAccessException e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            throw new ResourcePersistenceException();
         }
+
+         catch (IllegalAccessException e) {
+            throw new ResourceNotAccessibleException();
+        }
+
 
 
     }//end update()
@@ -121,8 +127,6 @@ public class Repo {
      * @author Kevin Chang
      * @author Thomas Diendorf
      * @author Chris Levano
-
-
      * Inserts a row of data into an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for insertion.
      */
@@ -197,11 +201,10 @@ public class Repo {
 //                          }
 //                      }
 
-                  } catch (java.sql.SQLException throwables) {
-                      System.out.println("You cannot insert duplicate key values!  Stopping insertion...");
-                      throwables.printStackTrace();
-                  } catch (IllegalAccessException throwables) {
-                      throwables.printStackTrace();
+                  } catch (SQLException e) {
+                      throw new ResourceDuplicationException();
+                  } catch (IllegalAccessException e) {
+                      throw new ResourceNotAccessibleException();
                   }
 
               }//end if
@@ -289,7 +292,8 @@ public class Repo {
                     System.out.println("Executing statement: " + pstmt);
                     pstmt.executeUpdate();
                 } catch (SQLException e){
-                    e.printStackTrace();
+                    throw new ResourceNotFoundException();
+
                 }
 
             }//end if Table present
@@ -316,9 +320,8 @@ public class Repo {
                     }
                 }
             }
-        } catch (SQLException throwables) {
-
-            //throwables.printStackTrace();
+        } catch (SQLException e) {
+            throw new ResourcePersistenceException();
         }
     }
 
@@ -438,9 +441,9 @@ public class Repo {
                             pstmt.executeUpdate();
                         }
                     } catch (SQLException e) {//a statement couldn't be executed
-                        System.out.println("Couldn't execute current SQL statement.  May be trying to add on a primary key that already exists." +
-                                "  Finished adding/editing columns!");
-                        e.printStackTrace();
+
+                        throw new ResourceDuplicationException();
+
                     }
                 }
             }//end if for checking if class has @Table
@@ -522,8 +525,10 @@ public class Repo {
                 }
             }
 
-        } catch (SQLException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            e.printStackTrace();
+        } catch (SQLException | InstantiationException | InvocationTargetException e) {
+            throw new ResourceNotFoundException();
+        } catch (IllegalAccessException e) {
+            throw new ResourceNotAccessibleException();
         }
         return objArr;
     }

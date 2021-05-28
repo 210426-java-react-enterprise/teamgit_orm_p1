@@ -23,9 +23,15 @@ public class Driver {
 
         //repo.create(a);
         //repo.insert(appUser2);
-        repo.update(appUser);
 
-        repo.create(a);
+        try {
+            repo.update(appUser);
+            repo.create(a);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+
 
 
         //users data: PK user_id, username, password, firstname, lastname, email, dob
