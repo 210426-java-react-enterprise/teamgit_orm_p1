@@ -356,35 +356,36 @@ public class Repo {
                                 .append(" ADD COLUMN IF NOT EXISTS ");
 
                         preparedStatement.append(f.getAnnotation(Column.class).name());//append name of column
+                        if (column != null) {
+                            switch (f.getAnnotation(Column.class).type()) {
+                                case "varchar":
+                                    preparedStatement.append(" VARCHAR(");
+                                    preparedStatement.append(f.getAnnotation(Column.class).length());
+                                    preparedStatement.append(")");
+                                    //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
+                                    break;
+                                case "date":
+                                    preparedStatement.append(" DATE");
+                                    //System.out.print(" DATE");//checking
+                                    break;
+                                case "double":
+                                    preparedStatement.append(" DOUBLE(");
+                                    preparedStatement.append(f.getAnnotation(Column.class).length());
+                                    preparedStatement.append(")");
+                                    preparedStatement.append(" DEFAULT 0.00");
 
-                        switch (f.getAnnotation(Column.class).type()) {
-                            case "varchar":
-                                preparedStatement.append(" VARCHAR(");
-                                preparedStatement.append(f.getAnnotation(Column.class).length());
-                                preparedStatement.append(")");
-                                //System.out.printf(" VARCHAR(%s)", f.getAnnotation(Column.class).length());//checking
-                                break;
-                            case "date":
-                                preparedStatement.append(" DATE");
-                                //System.out.print(" DATE");//checking
-                                break;
-                            case "double":
-                                preparedStatement.append(" DOUBLE(");
-                                preparedStatement.append(f.getAnnotation(Column.class).length());
-                                preparedStatement.append(")");
-                                preparedStatement.append(" DEFAULT 0.00");
-
-                                break;
-                            case "serial":
-                                preparedStatement.append(" SERIAL");
-                                //System.out.print(" SERIAL");//checking
-                                break;
-                            case "int":
-                                preparedStatement.append(" INTEGER");
-                                preparedStatement.append(" DEFAULT 0");
-                                break;
-                            default: //if no type is found...
-                                throw new InvalidFieldException("Invalid data type!");
+                                    break;
+                                case "serial":
+                                    preparedStatement.append(" SERIAL");
+                                    //System.out.print(" SERIAL");//checking
+                                    break;
+                                case "int":
+                                    preparedStatement.append(" INTEGER");
+                                    preparedStatement.append(" DEFAULT 0");
+                                    break;
+                                default: //if no type is found...
+                                    throw new InvalidFieldException("Invalid data type!");
+                            }
                         }
 
                         if (!f.getAnnotation(Column.class).nullable()) {
@@ -473,38 +474,42 @@ public class Repo {
                     StringBuilder select = new StringBuilder("SELECT * FROM " + tableName + " WHERE ");
                     Field[] fields = clazz.getDeclaredFields();
                     for (Field field : fields) {
-                        field.setAccessible(true);
-                        Object fieldVal = field.get(o);
-                        field.setAccessible(false);
+                        Column column = field.getAnnotation(Column.class);
+                        if (column != null) {
+                            field.setAccessible(true);
+                            Object fieldVal = field.get(o);
+                            field.setAccessible(false);
 
-                        if (field.getAnnotation(Column.class).type().equals("varchar")) {
-                            if (fieldVal != null) {
-                                String columnName = field.getAnnotation(Column.class).name();
-                                select.append(columnName + " = ? AND ");
-                                pstmtFields.add(field);
 
-                            }
-                        } else if (field.getAnnotation(Column.class).type().equals("date")) {
-                            if (fieldVal != null) {
-                                String columnName = field.getAnnotation(Column.class).name();
-                                select.append(columnName + " = ? AND ");
-                                pstmtFields.add(field);
+                            if (field.getAnnotation(Column.class).type().equals("varchar")) {
+                                if (fieldVal != null) {
+                                    String columnName = field.getAnnotation(Column.class).name();
+                                    select.append(columnName + " = ? AND ");
+                                    pstmtFields.add(field);
 
-                            }
-                        } else if (field.getAnnotation(Column.class).type().equals("serial")) {
-                            if (Integer.parseInt(String.valueOf(fieldVal)) != 0) {
-                                String columnName = field.getAnnotation(Column.class).name();
-                                select.append(columnName + " = ? AND ");
-                                pstmtFields.add(field);
+                                }
+                            } else if (field.getAnnotation(Column.class).type().equals("date")) {
+                                if (fieldVal != null) {
+                                    String columnName = field.getAnnotation(Column.class).name();
+                                    select.append(columnName + " = ? AND ");
+                                    pstmtFields.add(field);
 
-                            }
-                        //TODO this makes it impossible to query balances of 0.00
-                        } else if (field.getAnnotation(Column.class).type().equals("double")) {
-                            if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
-                                String columnName = field.getAnnotation(Column.class).name();
-                                select.append(columnName + " = ? AND ");
-                                pstmtFields.add(field);
+                                }
+                            } else if (field.getAnnotation(Column.class).type().equals("serial")) {
+                                if (Integer.parseInt(String.valueOf(fieldVal)) != 0) {
+                                    String columnName = field.getAnnotation(Column.class).name();
+                                    select.append(columnName + " = ? AND ");
+                                    pstmtFields.add(field);
 
+                                }
+                                //TODO this makes it impossible to query balances of 0.00
+                            } else if (field.getAnnotation(Column.class).type().equals("double")) {
+                                if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
+                                    String columnName = field.getAnnotation(Column.class).name();
+                                    select.append(columnName + " = ? AND ");
+                                    pstmtFields.add(field);
+
+                                }
                             }
                         }
                     }
@@ -592,39 +597,42 @@ public class Repo {
                 if (methods[i].isAnnotationPresent(Setter.class)) {
                     String methodName = methods[i].getAnnotation(Setter.class).name();
                     for (Field field : fields) {
-                        String columnName = field.getAnnotation(Column.class).name();
-                        if (methodName.equals(columnName)) {
-                            String type = field.getAnnotation(Column.class).type();
-                            switch (type) {
-                                case "varchar":
-                                    methods[i].setAccessible(true);
-                                    //invoke method on the returnObject to set its values
-                                    methods[i].invoke(returnObject, rs.getString(columnName));
-                                    methods[i].setAccessible(false);
-                                    break;
-                                case "date":
-                                    methods[i].setAccessible(true);
-                                    methods[i].invoke(returnObject, String.valueOf(rs.getDate(columnName)));
-                                    methods[i].setAccessible(false);
-                                    break;
-                                case "double":
-                                    methods[i].setAccessible(true);
-                                    methods[i].invoke(returnObject, rs.getDouble(columnName));
-                                    methods[i].setAccessible(false);
-                                    break;
-                                case "int":
-                                case "serial":
-                                    methods[i].setAccessible(true);
-                                    methods[i].invoke(returnObject, rs.getInt(columnName));
-                                    methods[i].setAccessible(false);
-                                    break;
-                                case "timestamp":
-                                    methods[i].setAccessible(true);
-                                    methods[i].invoke(returnObject, String.valueOf(rs.getTimestamp(columnName)));
-                                    methods[i].setAccessible(false);
-                                    break;
-                            }
+                        Column column = field.getAnnotation(Column.class);
+                        if (column != null) {
+                            String columnName = field.getAnnotation(Column.class).name();
+                            if (methodName.equals(columnName)) {
+                                String type = field.getAnnotation(Column.class).type();
+                                switch (type) {
+                                    case "varchar":
+                                        methods[i].setAccessible(true);
+                                        //invoke method on the returnObject to set its values
+                                        methods[i].invoke(returnObject, rs.getString(columnName));
+                                        methods[i].setAccessible(false);
+                                        break;
+                                    case "date":
+                                        methods[i].setAccessible(true);
+                                        methods[i].invoke(returnObject, String.valueOf(rs.getDate(columnName)));
+                                        methods[i].setAccessible(false);
+                                        break;
+                                    case "double":
+                                        methods[i].setAccessible(true);
+                                        methods[i].invoke(returnObject, rs.getDouble(columnName));
+                                        methods[i].setAccessible(false);
+                                        break;
+                                    case "int":
+                                    case "serial":
+                                        methods[i].setAccessible(true);
+                                        methods[i].invoke(returnObject, rs.getInt(columnName));
+                                        methods[i].setAccessible(false);
+                                        break;
+                                    case "timestamp":
+                                        methods[i].setAccessible(true);
+                                        methods[i].invoke(returnObject, String.valueOf(rs.getTimestamp(columnName)));
+                                        methods[i].setAccessible(false);
+                                        break;
+                                }
 
+                            }
                         }
                     }
                 }
