@@ -233,12 +233,15 @@ public class Repo {
     AND WHERE columnName='value';
      */
 
+
     /**
-     * Deletes a row of data from an SQL table.
+     * Deletes one or more rows of data from an SQL table.
      * @param o Object that has a Table, Entity, and Column annotations.  Must contain data to reference for deletion.
+     * @return Number of rows successfully deleted.  0 means none were deleted.
      */
-    public void delete(Object o) throws IllegalAccessException {
+    public int delete(Object o) throws IllegalAccessException {
         Class<?> clazz = o.getClass();//holds object instance of a class with annotated values to be inserted into table
+        ArrayList<Field> fieldList = new ArrayList<>();
 
         if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
             if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
@@ -268,14 +271,12 @@ public class Repo {
                                 //System.out.println("Deleting row with value: " + f.get(o));
                                 f.setAccessible(true);
                                 removeRow.append(f.get(o)).append("\'");//matching value in the colomn to indicate the row
+                                fieldList.add(f);
                                 f.setAccessible(false);
                                 removeRow.append(" AND ");//if we go for another loop
                             }
                         }
                     }
-
-
-
                 }//end foreach
 
                 removeRow.deleteCharAt(removeRow.lastIndexOf(" "));
@@ -289,8 +290,9 @@ public class Repo {
 
                 try(Connection conn = ConnectionPool.getInstance().getConnection()) {
                     PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
+                    pstmt = preparePreparedStatement(o, fieldList, pstmt, 1);
                     System.out.println("Executing statement: " + pstmt);
-                    pstmt.executeUpdate();
+                    return pstmt.executeUpdate();//returns number of rows deleted
                 } catch (SQLException e){
                     throw new ResourceNotFoundException();
 
@@ -298,6 +300,7 @@ public class Repo {
 
             }//end if Table present
         }//end if Entity present
+        return 0;
     }
 
 

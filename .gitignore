@@ -32,6 +32,3 @@ target/
 
 #properties files
 *.properties
-
-#any .jar files
-*.jar
