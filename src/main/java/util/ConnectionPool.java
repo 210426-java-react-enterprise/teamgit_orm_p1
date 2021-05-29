@@ -10,10 +10,10 @@ import java.util.*;
 //ConnectionPools uses c3p0
 public class ConnectionPool {
 
-    private static ConnectionPool connectionPool;
-    private static ComboPooledDataSource cpds = new ComboPooledDataSource();
+    private ConnectionPool connectionPool;
+    private ComboPooledDataSource cpds = new ComboPooledDataSource();
 
-    static {
+    {
         try {
             Properties props = new Properties();
             InputStream is = Thread.currentThread()
@@ -32,7 +32,7 @@ public class ConnectionPool {
 
     public ConnectionPool(){ }
 
-    public static ConnectionPool getInstance() {
+    public ConnectionPool getInstance() {
         if(connectionPool == null){
             connectionPool = new ConnectionPool();
         }

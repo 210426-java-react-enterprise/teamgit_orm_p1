@@ -20,6 +20,7 @@ import exceptions.*;
 
 public class Repo {
 
+    ConnectionPool connectionPool = new ConnectionPool().getInstance();
     /**
      * @author Chris Levano
      * @author Kevin Chang
@@ -38,7 +39,7 @@ public class Repo {
 
         String idName = null;
 
-        try (Connection conn = ConnectionPool.getInstance().getConnection()) {
+        try (Connection conn = connectionPool.getConnection()) {
             Class<?> clazz = o.getClass();
 
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
@@ -140,7 +141,7 @@ public class Repo {
             //return object array
             ArrayList<Object> objArr = null;
 
-      try (Connection conn = ConnectionPool.getInstance().getConnection()) {
+      try (Connection conn = connectionPool.getConnection()) {
           if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw from
               if (clazz.isAnnotationPresent(Table.class)) {//if there's a table that can be build from this
                   Table table = clazz.getAnnotation(Table.class);
@@ -288,7 +289,7 @@ public class Repo {
 
                 //should have removeRow ready at this point; put it into a PreparedStatement
 
-                try(Connection conn = ConnectionPool.getInstance().getConnection()) {
+                try(Connection conn = connectionPool.getConnection()) {
                     PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
                     return pstmt.executeUpdate();//returns number of rows deleted
                 } catch (SQLException e){
@@ -308,7 +309,7 @@ public class Repo {
      */
     public void create(Object o){
         Class<?> clazz = o.getClass();
-        try(Connection conn = ConnectionPool.getInstance().getConnection()) {
+        try(Connection conn = connectionPool.getConnection()) {
             if (clazz.isAnnotationPresent(Entity.class)) {//if annotated as entity that has attributes to draw
                 if (clazz.isAnnotationPresent(Table.class)) {
                     Table table = clazz.getAnnotation(Table.class);
@@ -467,7 +468,7 @@ public class Repo {
         ArrayList<Object> objArr = null;
         ArrayList<Field> pstmtFields = new ArrayList<>();
 
-        try (Connection conn = ConnectionPool.getInstance().getConnection()) {
+        try (Connection conn = connectionPool.getConnection()) {
             if (clazz.isAnnotationPresent((Entity.class))) {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
