@@ -290,8 +290,6 @@ public class Repo {
 
                 try(Connection conn = ConnectionPool.getInstance().getConnection()) {
                     PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
-                    pstmt = preparePreparedStatement(o, fieldList, pstmt, 1);
-                    System.out.println("Executing statement: " + pstmt);
                     return pstmt.executeUpdate();//returns number of rows deleted
                 } catch (SQLException e){
                     throw new ResourceNotFoundException();
