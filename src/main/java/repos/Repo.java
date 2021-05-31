@@ -528,10 +528,12 @@ public class Repo {
 
                         }
                     }
-                    //deletes the last 'and'
-                    select.deleteCharAt(select.lastIndexOf("A"));
-                    select.deleteCharAt(select.lastIndexOf("N"));
-                    select.deleteCharAt(select.lastIndexOf("D"));
+                    //deletes the last 'and' if where is true
+                    if(where == true) {
+                        select.deleteCharAt(select.lastIndexOf("A"));
+                        select.deleteCharAt(select.lastIndexOf("N"));
+                        select.deleteCharAt(select.lastIndexOf("D"));
+                    }
 
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
