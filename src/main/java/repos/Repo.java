@@ -402,7 +402,7 @@ public class Repo {
 
                         //handles foreign keys
                         if (f.isAnnotationPresent(ForeignKey.class)) {
-                            preparedStatement.append(" foreign key references"
+                            preparedStatement.append(" foreign key references "
                                     + f.getAnnotation(ForeignKey.class).references()
                                     + "("
                                     + f.getAnnotation(ForeignKey.class).name()
