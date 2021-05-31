@@ -113,7 +113,7 @@ public class Repo {
 
 
         } catch (SQLException e) {
-            throw new ResourcePersistenceException();
+            e.printStackTrace();
         }
 
          catch (IllegalAccessException e) {
@@ -203,7 +203,7 @@ public class Repo {
 //                      }
 
                   } catch (SQLException e) {
-                      throw new ResourceDuplicationException();
+                      e.printStackTrace();
                   } catch (IllegalAccessException e) {
                       throw new ResourceNotAccessibleException();
                   }
@@ -293,7 +293,7 @@ public class Repo {
                     PreparedStatement pstmt = conn.prepareStatement(removeRow.toString());
                     return pstmt.executeUpdate();//returns number of rows deleted
                 } catch (SQLException e){
-                    throw new ResourceNotFoundException();
+                    e.printStackTrace();
 
                 }
 
@@ -459,9 +459,7 @@ public class Repo {
                 if (primaryKeyAssigned) {
                     sqlStatements.add(dropPrimaryKey.toString());
                     sqlStatements.add(addPrimaryKey.toString());
-                } /*else {
-                        throw new IllegalArgumentException("There is no primary key!");
-                    }*/
+                }
 
                 //execute an sql statement for each column needing to be added
                 if (sqlStatements.size() > 0) {//must be at least 1 column to add
@@ -475,7 +473,10 @@ public class Repo {
                     } catch (SQLException e) {//a statement couldn't be executed
 
                         e.printStackTrace();
+<<<<<<< HEAD
 
+=======
+>>>>>>> 40289ce647bb83dfe773af1b3a6fbd1f9a9cdc1d
                     }
                 }
             }//end if for checking if class has @Table
@@ -577,7 +578,7 @@ public class Repo {
             }
 
         } catch (SQLException | InstantiationException | InvocationTargetException e) {
-            throw new ResourceNotFoundException();
+            e.printStackTrace();
         } catch (IllegalAccessException e) {
             throw new ResourceNotAccessibleException();
         }
