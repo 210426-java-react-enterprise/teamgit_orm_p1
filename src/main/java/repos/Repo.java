@@ -472,12 +472,16 @@ public class Repo {
             if (clazz.isAnnotationPresent((Entity.class))) {
                 if (clazz.isAnnotationPresent(Table.class)) {
                     String tableName = clazz.getAnnotation(Table.class).name();
-                    //TODO the where clause should be hardcoded here, in case we want to select all users or something
-                    StringBuilder select = new StringBuilder("SELECT * FROM " + tableName + " WHERE ");
+                    boolean where = false;
+                    StringBuilder select = new StringBuilder("SELECT * FROM " + tableName);
                     Field[] fields = clazz.getDeclaredFields();
                     for (Field field : fields) {
                         Column column = field.getAnnotation(Column.class);
                         if (column != null) {
+                            if (where != true){
+                                select.append(" WHERE ");
+                                where = true;
+                            }
                             field.setAccessible(true);
                             Object fieldVal = field.get(o);
                             field.setAccessible(false);
@@ -505,20 +509,31 @@ public class Repo {
 
                                 }
                                 //TODO this makes it impossible to query balances of 0.00
-                            } else if (field.getAnnotation(Column.class).type().equals("double")) {
+                            }
+                            else if (field.getAnnotation(Column.class).type().equals("double")) {
                                 if (Double.parseDouble(String.valueOf(fieldVal)) != 0) {
                                     String columnName = field.getAnnotation(Column.class).name();
                                     select.append(columnName + " = ? AND ");
                                     pstmtFields.add(field);
 
                                 }
+                            }else if (field.getAnnotation(Column.class).type().equals("int")) {
+                                if (Integer.parseInt(String.valueOf(fieldVal)) != 0) {
+                                    String columnName = field.getAnnotation(Column.class).name();
+                                    select.append(columnName + " = ? AND ");
+                                    pstmtFields.add(field);
+
+                                }
                             }
+
                         }
                     }
-                    //deletes the last 'and'
-                    select.deleteCharAt(select.lastIndexOf("A"));
-                    select.deleteCharAt(select.lastIndexOf("N"));
-                    select.deleteCharAt(select.lastIndexOf("D"));
+                    //deletes the last 'and' if where is true
+                    if(where == true) {
+                        select.deleteCharAt(select.lastIndexOf("A"));
+                        select.deleteCharAt(select.lastIndexOf("N"));
+                        select.deleteCharAt(select.lastIndexOf("D"));
+                    }
 
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
