@@ -391,7 +391,7 @@ public class Repo {
                                     preparedStatement.append(" DEFAULT 0");
                                     break;
                                 case "timestamp":
-                                    preparedStatement.append(" TIMESTAMP");
+                                    preparedStatement.append(" TIMESTAMP default current_timestamp");
                                     break;
 
                                 default: //if no type is found...
