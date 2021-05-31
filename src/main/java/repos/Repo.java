@@ -347,6 +347,9 @@ public class Repo {
                 StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
                         .append(" add constraint ");
 
+                StringBuilder dropForeignKey = null;
+                StringBuilder addForeignKey = null;
+
                 boolean primaryKeyAssigned = false;
 
                 LinkedList<String> sqlStatements = new LinkedList<>();
@@ -386,6 +389,10 @@ public class Repo {
                                     preparedStatement.append(" INTEGER");
                                     preparedStatement.append(" DEFAULT 0");
                                     break;
+                                case "timestamp":
+                                    preparedStatement.append(" TIMESTAMP");
+                                    break;
+
                                 default: //if no type is found...
                                     throw new InvalidFieldException("Invalid data type!");
                             }
@@ -403,14 +410,33 @@ public class Repo {
 
                         //handles foreign keys
                         if (f.isAnnotationPresent(ForeignKey.class)) {
-                            preparedStatement.append(" foreign key references"
-                                    + f.getAnnotation(ForeignKey.class).references()
-                                    + "("
+                            dropForeignKey = new StringBuilder();
+                            addForeignKey = new StringBuilder();
+                            dropForeignKey.append("ALTER TABLE "
+                                    + tableName + " "
+                                    + "drop constraint if exists "
                                     + f.getAnnotation(ForeignKey.class).name()
-                                    + ") "
-                                    + "on delete cascade");
+                                    + "_fk");
+                            sqlStatements.add(dropForeignKey.toString());
+                            addForeignKey.append("ALTER TABLE "
+                                    + tableName + " "
+                                    + "add constraint "
+                                    + f.getAnnotation(ForeignKey.class).name()
+                                    + "_fk "
+                                    + "foreign key ("
+                                    + f.getAnnotation(ForeignKey.class).name()
+                                    + ") references "
+                                    + f.getAnnotation(ForeignKey.class).references()
+                                    + "(" + f.getAnnotation(ForeignKey.class).name() + ")"
+                                    + " on delete cascade");
+                            sqlStatements.add(addForeignKey.toString());
 
                         }
+
+                        //ALTER TABLE accounts drop constraint if exists user_id_fk;
+                        //ALTER TABLE accounts add constraint user_id_fk foreign key (user_id)
+                        //references users(user_id) on delete cascade;
+
 
                         //TODO make composite key, put it before Id.class check, and set primaryKeyAssigned to true
                         //TODO new CompositeKey annotation necessary
