@@ -102,8 +102,8 @@ public class Repo {
 
                     //made a separate method to prepare a pstmt from an ArrayList of relevant fields
 
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
-                    pstmt = preparePreparedStatement(o, whereFields, pstmt, pstmtCount);
+                    pstmt = prepareSelectUpdateStatement(o, pstmtFields, pstmt, 1);
+                    pstmt = prepareSelectUpdateStatement(o, whereFields, pstmt, pstmtCount);
                     pstmt.executeUpdate();
 
 
@@ -180,7 +180,7 @@ public class Repo {
                   try {
                       PreparedStatement pstmt = conn.prepareStatement(preparedStatement.toString());
 
-                      pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
+                      pstmt = prepareInsertStatement(o, pstmtFields, pstmt, 1);
 
                       System.out.println("Executing this statement:\n" + pstmt.toString());
                       pstmt.executeUpdate();
@@ -570,7 +570,7 @@ public class Repo {
                     PreparedStatement pstmt = conn.prepareStatement(select.toString());
 
                     //this method written specifically to adds to the '?' of the pstmt
-                    pstmt = preparePreparedStatement(o, pstmtFields, pstmt, 1);
+                    pstmt = prepareSelectUpdateStatement(o, pstmtFields, pstmt, 1);
 
                     ResultSet rs = pstmt.executeQuery();
 
@@ -588,7 +588,7 @@ public class Repo {
     }
 
     //private class-restricted method for setting the '?' values of the pstmt
-    private PreparedStatement preparePreparedStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt, int pstmtCount) throws SQLException, IllegalAccessException {
+    private PreparedStatement prepareSelectUpdateStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt, int pstmtCount) throws SQLException, IllegalAccessException {
 
         for (int i = 0; i < fields.size(); i++) {
             fields.get(i).setAccessible(true);
@@ -624,6 +624,45 @@ public class Repo {
                     pstmt.setDouble(pstmtCount, Double.parseDouble(String.valueOf(currentFieldVal)));
                     pstmtCount++;
                 }
+            }
+        }
+        return pstmt;
+    }
+
+    private PreparedStatement prepareInsertStatement(Object o, ArrayList<Field> fields, PreparedStatement pstmt, int pstmtCount) throws SQLException, IllegalAccessException {
+
+        for (int i = 0; i < fields.size(); i++) {
+            fields.get(i).setAccessible(true);
+            Object currentFieldVal = fields.get(i).get(o);
+            fields.get(i).setAccessible(false);
+            String type = fields.get(i).getAnnotation(Column.class).type();
+
+            if (type.equals("date")) {
+                if (currentFieldVal != null) {
+                    fields.get(i).setAccessible(true);
+
+//                    String date = String.valueOf(currentFieldVal);
+//                    date = date.substring(0, date.length()-2);
+                    pstmt.setDate(pstmtCount, Date.valueOf(String.valueOf(currentFieldVal)));
+                    pstmtCount++;
+                }
+            } else if (type.equals("varchar")) {
+                if (currentFieldVal != null) {
+                    //System.out.println(fields[i].get(o));
+                    pstmt.setString(pstmtCount, String.valueOf(currentFieldVal));
+                    pstmtCount++;
+                }
+            } else if (type.equals("int")) {
+                if (Integer.parseInt(String.valueOf(currentFieldVal)) != 0) {
+                    //System.out.println(fields[i].get(o));
+                    pstmt.setInt(pstmtCount, Integer.parseInt(String.valueOf(currentFieldVal)));
+                    pstmtCount++;
+                }
+            }
+            else if (type.equals("double")) {
+                //System.out.println(fields[i].get(o));
+                pstmt.setDouble(pstmtCount, Double.parseDouble(String.valueOf(currentFieldVal)));
+                pstmtCount++;
             }
         }
         return pstmt;
