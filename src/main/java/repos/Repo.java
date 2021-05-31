@@ -342,7 +342,8 @@ public class Repo {
                 String tableName = table.name();//EX: tableName.name == "users"
                 System.out.println("Inside createTable: " + tableName);
 
-
+                StringBuilder dropPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
+                                                                 .append(" drop constraint if exists ");
                 StringBuilder addPrimaryKey = new StringBuilder().append("ALTER TABLE ").append(tableName)
                         .append(" add constraint ");
 
@@ -416,6 +417,7 @@ public class Repo {
 
                         if (f.isAnnotationPresent(Id.class) && !primaryKeyAssigned) {
                             primaryKeyAssigned = true;
+                            dropPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ");
                             addPrimaryKey.append(f.getAnnotation(Column.class).name()).append("_pk ")
                                     .append("PRIMARY KEY (").append(f.getAnnotation(Column.class).name())
                                     .append(")");
@@ -429,6 +431,7 @@ public class Repo {
                 }//end for loop
 
                 if (primaryKeyAssigned) {
+                    sqlStatements.add(dropPrimaryKey.toString());
                     sqlStatements.add(addPrimaryKey.toString());
                 } /*else {
                         throw new IllegalArgumentException("There is no primary key!");
