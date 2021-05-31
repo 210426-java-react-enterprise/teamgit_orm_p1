@@ -375,7 +375,7 @@ public class Repo {
                                     //System.out.print(" DATE");//checking
                                     break;
                                 case "double":
-                                    preparedStatement.append(" DOUBLE(");
+                                    preparedStatement.append(" DECIMAL(");
                                     preparedStatement.append(f.getAnnotation(Column.class).length());
                                     preparedStatement.append(")");
                                     preparedStatement.append(" DEFAULT 0.00");
@@ -391,6 +391,7 @@ public class Repo {
                                     break;
                                 case "timestamp":
                                     preparedStatement.append(" TIMESTAMP");
+                                    preparedStatement.append(" default current_timestamp ");
                                     break;
 
                                 default: //if no type is found...
@@ -479,10 +480,6 @@ public class Repo {
                     } catch (SQLException e) {//a statement couldn't be executed
 
                         e.printStackTrace();
-<<<<<<< HEAD
-
-=======
->>>>>>> 40289ce647bb83dfe773af1b3a6fbd1f9a9cdc1d
                     }
                 }
             }//end if for checking if class has @Table
