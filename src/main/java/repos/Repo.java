@@ -353,6 +353,7 @@ public class Repo {
                 boolean primaryKeyAssigned = false;
 
                 LinkedList<String> sqlStatements = new LinkedList<>();
+                LinkedList<String> fkStatements = new LinkedList<>();
 
                 for (Field f : clazz.getDeclaredFields()) {
                     if (f.isAnnotationPresent(Column.class)) {
@@ -417,7 +418,7 @@ public class Repo {
                                     + "drop constraint if exists "
                                     + f.getAnnotation(ForeignKey.class).name()
                                     + "_fk");
-                            sqlStatements.add(dropForeignKey.toString());
+                            fkStatements.add(dropForeignKey.toString());
                             addForeignKey.append("ALTER TABLE "
                                     + tableName + " "
                                     + "add constraint "
@@ -429,7 +430,7 @@ public class Repo {
                                     + f.getAnnotation(ForeignKey.class).references()
                                     + "(" + f.getAnnotation(ForeignKey.class).name() + ")"
                                     + " on delete cascade");
-                            sqlStatements.add(addForeignKey.toString());
+                            fkStatements.add(addForeignKey.toString());
 
                         }
 
@@ -466,6 +467,11 @@ public class Repo {
                     try {
                         //reverse order so that DROP COLUMN statements are executed first.
                         for (String q : sqlStatements) {
+                            PreparedStatement pstmt = conn.prepareStatement(q);
+                            System.out.println(pstmt.toString());
+                            pstmt.executeUpdate();
+                        }
+                        for (String q : fkStatements) {
                             PreparedStatement pstmt = conn.prepareStatement(q);
                             System.out.println(pstmt.toString());
                             pstmt.executeUpdate();
