@@ -316,10 +316,9 @@ public class Repo {
                     String tableName = table.name();//if tableName.name == "users"
                     String sql = ("CREATE TABLE IF NOT EXISTS " + tableName + "()");
                     Statement stmt = conn.createStatement();
-                    int result = stmt.executeUpdate(sql);
-                    if(result != 0) {
-                        addColumns(o, conn);
-                    }
+                    stmt.executeUpdate(sql);
+                    addColumns(o, conn);
+
                 }
             }
         } catch (SQLException e) {
