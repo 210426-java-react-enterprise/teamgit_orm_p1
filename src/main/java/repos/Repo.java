@@ -9,7 +9,6 @@ import annotations.*;
 import java.util.ArrayList;
 
 
-import models.*;
 import util.*;
 
 import java.sql.Connection;
@@ -78,7 +77,7 @@ public class Repo {
                         if(f.isAnnotationPresent(Id.class)) {
                             f.setAccessible(true);
                             if (Integer.parseInt(String.valueOf(f.get(o))) != 0) {
-                                preparedStatement.append(f.getAnnotation(Id.class).name()).append(" = ").append("?").append(", ");
+                                preparedStatement.append(f.getAnnotation(Id.class).name()).append(" = ").append("?").append(" AND ");
                                 whereFields.add(f);
                             }
                             f.setAccessible(false);
@@ -616,7 +615,7 @@ public class Repo {
                     pstmt.setString(pstmtCount, String.valueOf(currentFieldVal));
                     pstmtCount++;
                 }
-            } else if (type.equals("int")) {
+            } else if (type.equals("int") || type.equals("serial")) {
                 if (Integer.parseInt(String.valueOf(currentFieldVal)) != 0) {
                     //System.out.println(fields[i].get(o));
                     pstmt.setInt(pstmtCount, Integer.parseInt(String.valueOf(currentFieldVal)));
@@ -657,7 +656,7 @@ public class Repo {
                     pstmt.setString(pstmtCount, String.valueOf(currentFieldVal));
                     pstmtCount++;
                 }
-            } else if (type.equals("int")) {
+            } else if (type.equals("int") || type.equals("serial")) {
                 //System.out.println(fields[i].get(o));
                 pstmt.setInt(pstmtCount, Integer.parseInt(String.valueOf(currentFieldVal)));
                 pstmtCount++;
