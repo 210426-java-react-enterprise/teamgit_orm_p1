@@ -3,20 +3,20 @@ Our custom ORM is used to perform basic CRUD functions through Java using the Re
 
 # Technologies Used
 
-Java - version 1.8
-PostgreSQL - version 42.2.12
-Maven - version 3.8.1
-Maven - version 3.8.1
-Git - version 2.31.1
-JUnit - version 4.13.2
-Postman - version 8.3.0
-Tomcat - version 9.0.46
-JSON Web Tokens - version 0.9.1
-AWS RDS
-AWS CodeBuild
-AWS CodePipeline
-AWS S3
-AWS Elastic Beanstalk
+Java - version 1.8  
+PostgreSQL - version 42.2.12  
+Maven - version 3.8.1  
+Maven - version 3.8.1  
+Git - version 2.31.1  
+JUnit - version 4.13.2  
+Postman - version 8.3.0  
+Tomcat - version 9.0.46  
+JSON Web Tokens - version 0.9.1  
+AWS RDS  
+AWS CodeBuild  
+AWS CodePipeline  
+AWS S3  
+AWS Elastic Beanstalk  
 
 # Features
 - Agnostic table creation
